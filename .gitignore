@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Environment Variables & Keys
+.env
+.env.local
+*.pem
+
+# Build outputs
+/backend/dist
+/dashboard/dist
+/extension/dist
+
+# OS files
+.DS_Store
+Thumbs.db
