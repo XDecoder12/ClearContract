@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import aiRoutes from './routes/ai.js'; // <-- 1. Add this import
+import authRoutes from './routes/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Use Routes
 app.use('/api/ai', aiRoutes); // <-- 2. Connect the AI route
+app.use('/api/auth', authRoutes);
 
 // Basic Health Check Route
 app.get('/', (req, res) => {
