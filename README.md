@@ -2,18 +2,18 @@
 
 ClearContract is an AI-powered Chrome Extension designed to protect users from predatory legal agreements. It instantly scans Terms of Service and contracts to identify "dark patterns," hidden fees, and unfair clauses using Google's Gemini AI.
 
-## 🚀 Tech Stack
+## Tech Stack
 * **Frontend:** React.js, Chrome Extension APIs
 * **Backend:** Node.js, Express.js
 * **Database:** MongoDB Atlas (Mongoose)
 * **AI Integration:** Google Gemini 3.1 Flash-Lite
 * **Authentication:** JSON Web Tokens (JWT) & bcryptjs
 
-## 📂 Project Structure
+## Project Structure
 * `/backend` - The Node.js/Express API that connects to MongoDB and Google Gemini.
 * `/extension` - *(Coming Soon)* The React-based Chrome Extension UI.
 
-## 🛠️ Local Setup Instructions
+## Local Setup Instructions
 
 ### Prerequisites
 * Node.js (v18+ recommended)
@@ -38,14 +38,14 @@ ClearContract is an AI-powered Chrome Extension designed to protect users from p
    ```
    *The server will run on `http://localhost:5001`*
 
-## 💡 Core Features (In Development)
+## Core Features (In Development)
 - [x] Backend Express Server Setup
 - [x] MongoDB Connection
 - [x] Gemini AI Analysis Endpoint
 - [ ] User Authentication (JWT & bcrypt)
-- [ ] Chrome Extension UI
+- [x] Chrome Extension UI
 - [ ] Cross-site DOM text scraping
 - [ ] Save scan history to user profile
 
-## 🤝 Contributing
+## Contributing
 This project is currently under active development by the ClearContract team.
