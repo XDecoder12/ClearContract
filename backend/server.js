@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import aiRoutes from './routes/ai.js'; // <-- 1. Add this import
+import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
 
 // Load environment variables
@@ -22,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.error('🔴 MongoDB connection error:', err));
 
 // Use Routes
-app.use('/api/ai', aiRoutes); // <-- 2. Connect the AI route
+app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 
 // Basic Health Check Route
