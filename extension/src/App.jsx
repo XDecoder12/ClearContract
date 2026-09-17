@@ -7,6 +7,32 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const handleScrapePage = async () => {
+    try {
+      // 1. Get the current active tab the user is looking at
+      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      // 2. Inject a script into that tab to extract the text
+      const injectionResult = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          // This code runs inside the actual webpage, not the popup
+          return document.body.innerText;
+        },
+      });
+
+      // 3. Update the React text box with the scraped text (limited to 5000 chars for the AI)
+      if (injectionResult && injectionResult[0] && injectionResult[0].result) {
+        const scrapedText = injectionResult[0].result;
+        setContractText(scrapedText.substring(0, 50000));
+        setError('');
+      }
+    } catch (err) {
+      console.error("Scraping error:", err);
+      setError("Could not read this webpage. Chrome restricts scraping on certain system pages.");
+    }
+  };
+
   const handleAnalyze = async () => {
     if (!contractText.trim()) {
       setError('Please enter or paste contract text first.');
@@ -43,10 +69,27 @@ function App() {
 
   return (
     <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
-      <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>🛡️ ClearContract AI</h2>
+      <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>ClearContract AI</h2>
       <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
         Paste any terms or contract clauses below to scan for hidden risks.
       </p>
+
+      <button
+        onClick={handleScrapePage}
+        style={{
+          width: '100%',
+          marginBottom: '12px',
+          padding: '8px',
+          backgroundColor: '#10b981',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}
+      >
+        Read Current Webpage
+      </button>
 
       <textarea
         rows="6"

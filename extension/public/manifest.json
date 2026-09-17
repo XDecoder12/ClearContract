@@ -7,5 +7,5 @@
     "default_popup": "index.html",
     "default_title": "ClearContract AI Guardian"
   },
-  "permissions": []
+  "permissions": ["activeTab", "scripting", "storage"]
 }
