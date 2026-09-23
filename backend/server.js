@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
+import scansRoutes from './routes/scans.js';
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Use Routes
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/scans', scansRoutes);
 
 // Basic Health Check Route
 app.get('/', (req, res) => {
