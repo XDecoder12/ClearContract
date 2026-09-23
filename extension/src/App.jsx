@@ -1,16 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
+import { login, getAuthToken, logout } from './auth.js';
 
 function App() {
   const [contractText, setContractText] = useState('');
-  const [analysis, setAnalysis] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await getAuthToken();
+
+      setIsAuthenticated(!!token);
+      setCheckingAuth(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      setIsAuthenticated(true);
+      setPassword('');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleScrapePage = async () => {
     try {
       // 1. Get the current active tab the user is looking at
       let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      setSourceUrl(tab.url || '');
 
       // 2. Inject a script into that tab to extract the text
       const injectionResult = await chrome.scripting.executeScript({
@@ -44,12 +82,21 @@ function App() {
     setAnalysis('');
 
     try {
+      const token = await getAuthToken();
+
+      if (!token) {
+        setIsAuthenticated(false);
+        setError('Please log in again.');
+        return;
+      }
+
       const response = await fetch('http://localhost:5001/api/ai/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ contractText }),
+        body: JSON.stringify({ contractText, sourceUrl }),
       });
 
       const data = await response.json();
@@ -66,6 +113,85 @@ function App() {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
+        <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>
+          ClearContract AI
+        </h2>
+
+        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
+          Log in to analyze contracts and save your scan history.
+        </p>
+
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '8px',
+              marginBottom: '8px',
+              borderRadius: '6px',
+              border: '1px solid #ccc'
+            }}
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '8px',
+              marginBottom: '12px',
+              borderRadius: '6px',
+              border: '1px solid #ccc'
+            }}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              backgroundColor: loading ? '#888' : '#2563eb',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Logging in...' : 'Log In'}
+          </button>
+        </form>
+
+        {error && (
+          <div style={{ marginTop: '12px', color: '#dc2626', fontSize: '12px' }}>
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
@@ -141,13 +267,38 @@ function App() {
           fontSize: '12px',
           maxHeight: '220px',
           overflowY: 'auto',
-          textAlign: 'left',
-          whiteSpace: 'pre-wrap'
+          textAlign: 'left'
         }}>
           <strong>Analysis Results:</strong>
-          <div style={{ marginTop: '8px' }}>{analysis}</div>
+
+          <div style={{ marginTop: '8px' }}>
+            <strong>Summary</strong>
+            <p>{analysis.aiSummary}</p>
+          </div>
+
+          {analysis.darkPatternsFound.length > 0 && (
+            <div style={{ marginTop: '12px' }}>
+              <strong>Potential Risks</strong>
+
+              {analysis.darkPatternsFound.map((pattern, index) => (
+                <div key={index} style={{ marginTop: '8px' }}>
+                  <strong>{pattern.category}</strong>
+                  <p style={{ margin: '4px 0 0 0' }}>
+                    {pattern.explanation}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {analysis.darkPatternsFound.length === 0 && (
+            <p style={{ marginTop: '8px' }}>
+              No meaningful dark patterns or consumer risks were identified.
+            </p>
+          )}
         </div>
       )}
+
     </div>
   );
 }
