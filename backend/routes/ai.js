@@ -15,7 +15,7 @@ router.post('/analyze', async (req, res) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     // 2. Use a modern, actively supported model 
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
     
     // Craft the prompt for the AI
     const prompt = `
