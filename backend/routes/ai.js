@@ -10,9 +10,27 @@ router.post('/analyze', authenticateToken, async (req, res) => {
   try {
     const { contractText, sourceUrl } = req.body;
 
-    if (!contractText) {
+    if (typeof contractText !== 'string') {
       return res.status(400).json({
-        error: 'Contract text is required.'
+        error: 'Contract text must be a string.'
+      });
+    }
+
+    if (contractText.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Contract text cannot be empty.'
+      });
+    }
+
+    if (contractText.length > 50000) {
+      return res.status(413).json({
+        error: 'Contract text exceeds the 50,000 character limit.'
+      });
+    }
+
+    if (sourceUrl !== undefined && typeof sourceUrl !== 'string') {
+      return res.status(400).json({
+        error: 'Source URL must be a string.'
       });
     }
 
