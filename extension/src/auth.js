@@ -44,6 +44,11 @@ export const getScanHistory = async () => {
 
   const data = await response.json();
 
+  if (response.status === 401) {
+    await logout();
+    throw new Error('Your session has expired. Please log in again.');
+  }
+
   if (!response.ok) {
     throw new Error(data.error || 'Failed to retrieve scan history.');
   }

@@ -69,6 +69,16 @@ function App() {
       setShowHistory(true);
     } catch (err) {
       console.error('Scan history error:', err);
+
+      if (err.message === 'Your session has expired. Please log in again.') {
+        setIsAuthenticated(false);
+        setShowHistory(false);
+        setScanHistory([]);
+        setContractText('');
+        setSourceUrl('');
+        setAnalysis(null);
+      }
+
       setError(err.message || 'Failed to load scan history.');
     } finally {
       setLoading(false);
