@@ -143,6 +143,20 @@ function App() {
 
       const data = await response.json();
 
+      if (response.status === 401) {
+        await logout();
+
+        setIsAuthenticated(false);
+        setShowHistory(false);
+        setScanHistory([]);
+        setContractText('');
+        setSourceUrl('');
+        setAnalysis(null);
+
+        setError('Your session has expired. Please log in again.');
+        return;
+      }
+
       if (data.success) {
         setAnalysis(data.analysis);
       } else {
