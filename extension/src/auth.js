@@ -28,6 +28,29 @@ export const getAuthToken = async () => {
   return result.authToken || null;
 };
 
+export const getScanHistory = async () => {
+  const token = await getAuthToken();
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/scans`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to retrieve scan history.');
+  }
+
+  return data.scans;
+};
+
 export const logout = async () => {
   await chrome.storage.local.remove(['authToken', 'userId']);
 };

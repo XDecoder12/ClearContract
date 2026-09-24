@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { login, getAuthToken, logout } from './auth.js';
+import { login, getAuthToken, getScanHistory, logout } from './auth.js';
 
 function App() {
   const [contractText, setContractText] = useState('');
@@ -13,6 +13,9 @@ function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const [scanHistory, setScanHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -38,6 +41,23 @@ function App() {
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShowHistory = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const scans = await getScanHistory();
+
+      setScanHistory(scans);
+      setShowHistory(true);
+    } catch (err) {
+      console.error('Scan history error:', err);
+      setError(err.message || 'Failed to load scan history.');
     } finally {
       setLoading(false);
     }
@@ -193,12 +213,108 @@ function App() {
     );
   }
 
+  if (showHistory) {
+    return (
+      <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
+        <button
+          onClick={() => setShowHistory(false)}
+          style={{
+            marginBottom: '12px',
+            padding: '6px 10px',
+            backgroundColor: '#e5e7eb',
+            color: '#1f2937',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          ← Back to New Scan
+        </button>
+
+        <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>
+          Scan History
+        </h2>
+
+        {scanHistory.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#666' }}>
+            No scans found yet.
+          </p>
+        ) : (
+          <div
+            style={{
+              maxHeight: '400px',
+              overflowY: 'auto'
+            }}
+          >
+            {scanHistory.map((scan) => (
+              <div
+                key={scan._id}
+                style={{
+                  marginBottom: '12px',
+                  padding: '12px',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  textAlign: 'left'
+                }}
+              >
+                <strong>
+                  {scan.sourceUrl || 'Manual contract scan'}
+                </strong>
+
+                <p style={{ margin: '6px 0', color: '#666' }}>
+                  {new Date(scan.scannedAt).toLocaleString()}
+                </p>
+
+                <p style={{ margin: '6px 0' }}>
+                  {scan.aiSummary}
+                </p>
+
+                {scan.darkPatternsFound?.length > 0 && (
+                  <div style={{ marginTop: '8px' }}>
+                    <strong>
+                      Potential Risks: {scan.darkPatternsFound.length}
+                    </strong>
+                  </div>
+                )}
+
+                {scan.darkPatternsFound?.length === 0 && (
+                  <div style={{ marginTop: '8px', color: '#166534' }}>
+                    No meaningful risks identified.
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
       <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>ClearContract AI</h2>
       <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
         Paste any terms or contract clauses below to scan for hidden risks.
       </p>
+
+      <button
+        onClick={handleShowHistory}
+        disabled={loading}
+        style={{
+          width: '100%',
+          marginBottom: '12px',
+          padding: '8px',
+          backgroundColor: '#6b7280',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontWeight: 'bold',
+          cursor: loading ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {loading ? 'Loading History...' : 'Scan History'}
+      </button>
 
       <button
         onClick={handleScrapePage}
