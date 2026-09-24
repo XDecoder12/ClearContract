@@ -46,6 +46,18 @@ function App() {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+
+    setIsAuthenticated(false);
+    setShowHistory(false);
+    setScanHistory([]);
+    setContractText('');
+    setSourceUrl('');
+    setAnalysis(null);
+    setError('');
+  };
+
   const handleShowHistory = async () => {
     setError('');
     setLoading(true);
@@ -294,6 +306,24 @@ function App() {
   return (
     <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
       <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>ClearContract AI</h2>
+
+      <button
+        onClick={handleLogout}
+        style={{
+          width: '100%',
+          marginBottom: '12px',
+          padding: '8px',
+          backgroundColor: '#ef4444',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}
+      >
+        Log Out
+      </button>
+
       <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
         Paste any terms or contract clauses below to scan for hidden risks.
       </p>
