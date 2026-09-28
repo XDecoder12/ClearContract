@@ -71,6 +71,38 @@ const createAnalysisModel = () => {
   const model = createAnalysisModel();
 };
 
+const sleep = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableGeminiError = (error) => {
+  const status = error?.status;
+
+  return (
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
+};
+
+const generateContentWithRetry = async (model, prompt) => {
+  const maxAttempts = 3;
+  const delays = [1000, 2500];
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await model.generateContent(prompt);
+    } catch (error) {
+      if (!isRetryableGeminiError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+
+      await sleep(delays[attempt - 1]);
+    }
+  }
+};
+
 const analyzeContractChunk = async (model, chunk, chunkIndex, totalChunks) => {
   const prompt = `${contractAnalysisPrompt}
 
@@ -80,7 +112,7 @@ Do not assume facts from other sections that are not included here.
 
 ${chunk}`;
 
-  const result = await model.generateContent(prompt);
+  const result = await generateContentWithRetry(model, prompt);
 
   const analysis = JSON.parse(result.response.text());
 
