@@ -101,10 +101,10 @@ function App() {
         },
       });
 
-      // 3. Update the React text box with the scraped text (limited to 5000 chars for the AI)
+      // 3. Keep up to 200,000 characters so the backend can chunk large contracts
       if (injectionResult && injectionResult[0] && injectionResult[0].result) {
         const scrapedText = injectionResult[0].result;
-        setContractText(scrapedText.substring(0, 50000));
+        setContractText(scrapedText.substring(0, 200000));
         setError('');
       }
     } catch (err) {
