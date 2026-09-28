@@ -152,7 +152,7 @@ ${JSON.stringify(analysis)}
 
 ${analysisNotes}`;
 
-  const result = await model.generateContent(prompt);
+  const result = await generateContentWithRetry(model, prompt);
 
   const synthesis = JSON.parse(result.response.text());
 
