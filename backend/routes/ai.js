@@ -1,7 +1,7 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import authenticateToken from '../middleware/auth.js';
-import { contractAnalysisPrompt } from '../config/prompts.js';
+import { contractAnalysisPrompt, contractSynthesisPrompt } from '../config/prompts.js';
 import ScanResult from '../models/ScanResult.js';
 
 const router = express.Router();
@@ -106,6 +106,46 @@ ${chunk}`;
   return analysis;
 };
 
+const synthesizeChunkAnalyses = async (model, chunkAnalyses) => {
+  const analysisNotes = chunkAnalyses
+    .map(
+      (analysis, index) => `
+Analysis ${index + 1}:
+${JSON.stringify(analysis)}
+`
+    )
+    .join('\n');
+
+  const prompt = `${contractSynthesisPrompt}
+
+${analysisNotes}`;
+
+  const result = await model.generateContent(prompt);
+
+  const synthesis = JSON.parse(result.response.text());
+
+  if (
+    !synthesis ||
+    !Array.isArray(synthesis.darkPatternsFound) ||
+    typeof synthesis.aiSummary !== 'string'
+  ) {
+    throw new Error('AI returned an invalid synthesis format.');
+  }
+
+  const invalidPattern = synthesis.darkPatternsFound.some(
+    (pattern) =>
+      !pattern ||
+      typeof pattern.category !== 'string' ||
+      typeof pattern.explanation !== 'string'
+  );
+
+  if (invalidPattern) {
+    throw new Error('AI returned an invalid synthesis pattern format.');
+  }
+
+  return synthesis;
+};
+
 router.post('/analyze', authenticateToken, async (req, res) => {
   try {
     const { contractText, sourceUrl } = req.body;
@@ -182,29 +222,16 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       chunkAnalyses.push(chunkAnalysis);
     }
 
-    const darkPatternsFound = chunkAnalyses.flatMap(
-      (chunkAnalysis) => chunkAnalysis.darkPatternsFound
-    );
+    const synthesis = await synthesizeChunkAnalyses(model, chunkAnalyses);
 
-    const uniquePatterns = Array.from(
-      new Map(
-        darkPatternsFound.map((pattern) => [
-          `${pattern.category}::${pattern.explanation}`,
-          pattern
-        ])
-      ).values()
-    );
-
-    const aiSummary = chunkAnalyses
-      .map((chunkAnalysis) => chunkAnalysis.aiSummary.trim())
-      .filter(Boolean)
-      .join(' ');
+    const darkPatternsFound = synthesis.darkPatternsFound;
+    const aiSummary = synthesis.aiSummary;
 
     const scanResult = new ScanResult({
       userId: req.user.userId,
       sourceUrl,
       originalText: contractText,
-      darkPatternsFound: uniquePatterns,
+      darkPatternsFound,
       aiSummary
     });
 
@@ -213,7 +240,7 @@ router.post('/analyze', authenticateToken, async (req, res) => {
     res.status(200).json({
       success: true,
       analysis: {
-        darkPatternsFound: uniquePatterns,
+        darkPatternsFound,
         aiSummary
       },
       scanId: scanResult._id
