@@ -1,0 +1,170 @@
+/* Base application styling */
+:root {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  color: #172033;
+  background: #f8fafc;
+}
+
+body {
+  margin: 0;
+  min-width: 350px;
+  background: #f8fafc;
+}
+
+/* Main popup container */
+#root > div {
+  box-sizing: border-box;
+  color: #172033;
+}
+
+/* Headings */
+#root h2 {
+  letter-spacing: -0.5px;
+  font-weight: 700;
+}
+
+/* Paragraphs */
+#root p {
+  line-height: 1.5;
+}
+
+#root button {
+  box-sizing: border-box;
+  font-family: inherit;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+#root button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14);
+  filter: brightness(0.95);
+}
+
+#root button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+#root button:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 3px;
+}
+
+#root button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+#root textarea {
+  box-sizing: border-box;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #172033;
+  background: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+#root textarea:focus {
+  outline: none;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+#root textarea::placeholder {
+  color: #94a3b8;
+}
+
+#root > div > div[style*="maxHeight"] {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px !important;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06);
+  line-height: 1.6;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+/* Custom scrollbar for AI output */
+#root > div > div[style*="maxHeight"]::-webkit-scrollbar {
+  width: 7px;
+}
+
+#root > div > div[style*="maxHeight"]::-webkit-scrollbar-track {
+  background: #e9eef5;
+  border-radius: 10px;
+}
+
+#root > div > div[style*="maxHeight"]::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+  border: 1px solid #e9eef5;
+}
+
+#root > div > div[style*="maxHeight"]::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Firefox scrollbar support */
+#root > div > div[style*="maxHeight"] {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e9eef5;
+}
+
+#root > div > div[style*="color: rgb(220, 38, 38)"] {
+  padding: 9px 11px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  line-height: 1.5;
+}
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+}
+
+/* High risk — Red */
+.risk-badge--high {
+  color: #ffffff;
+  background-color: #b91c1c;
+  border: 1px solid #991b1b;
+}
+
+/* Warning — Yellow */
+.risk-badge--warning {
+  color: #713f12;
+  background-color: #fef08a;
+  border: 1px solid #eab308;
+}
+
+/* Normal / Low risk — Green */
+.risk-badge--low {
+  color: #166534;
+  background-color: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.ui-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06);
+}
