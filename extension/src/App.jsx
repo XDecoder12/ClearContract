@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import { login, getAuthToken, getScanHistory, logout } from './auth.js';
 
+const MAX_CONTRACT_CHARS = 200000;
+
 function App() {
   const [contractText, setContractText] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
@@ -104,7 +106,7 @@ function App() {
       // 3. Keep up to 200,000 characters so the backend can chunk large contracts
       if (injectionResult && injectionResult[0] && injectionResult[0].result) {
         const scrapedText = injectionResult[0].result;
-        setContractText(scrapedText.substring(0, 200000));
+        setContractText(scrapedText.substring(0, MAX_CONTRACT_CHARS));
         setError('');
       }
     } catch (err) {
@@ -403,6 +405,18 @@ function App() {
         value={contractText}
         onChange={(e) => setContractText(e.target.value)}
       />
+
+      <div
+        style={{
+          marginTop: '6px',
+          marginBottom: '12px',
+          fontSize: '11px',
+          color: contractText.length >= MAX_CONTRACT_CHARS ? '#dc2626' : '#666',
+          textAlign: 'right'
+        }}
+      >
+        {contractText.length.toLocaleString()} / {MAX_CONTRACT_CHARS.toLocaleString()} characters
+      </div>
 
       <button
         onClick={handleAnalyze}
