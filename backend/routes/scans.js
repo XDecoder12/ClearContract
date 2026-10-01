@@ -8,7 +8,11 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const scans = await ScanResult.find({
       userId: req.user.userId
-    }).sort({ scannedAt: -1 });
+    })
+      .select('_id sourceUrl aiSummary darkPatternsFound scannedAt')
+      .sort({ scannedAt: -1 })
+      .limit(50)
+      .lean();
 
     res.status(200).json({
       success: true,
