@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { rateLimit } from 'express-rate-limit';
 import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
 import scansRoutes from './routes/scans.js';
@@ -10,6 +11,16 @@ import scansRoutes from './routes/scans.js';
 dotenv.config();
 
 const app = express();
+
+const aiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many analysis requests. Please try again later.'
+  }
+});
 
 // Middleware
 app.use(express.json({ limit: '1mb' }));
@@ -23,6 +34,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.error('🔴 MongoDB connection error:', err));
 
 // Use Routes
+app.use('/api/ai/analyze', aiRateLimiter);
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scansRoutes);

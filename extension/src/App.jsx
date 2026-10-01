@@ -8,7 +8,12 @@ function App() {
   const [contractText, setContractText] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isScraping, setIsScraping] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const [error, setError] = useState('');
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,6 +23,12 @@ function App() {
 
   const [scanHistory, setScanHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  const isBusy =
+    isLoggingIn ||
+    isLoadingHistory ||
+    isScraping ||
+    isAnalyzing;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -34,21 +45,26 @@ function App() {
     event.preventDefault();
 
     setError('');
-    setLoading(true);
+    setIsLoggingIn(true);
 
     try {
       await login(email, password);
+
       setIsAuthenticated(true);
       setPassword('');
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Login failed.');
     } finally {
-      setLoading(false);
+      setIsLoggingIn(false);
     }
   };
 
   const handleLogout = async () => {
+    if (isBusy) {
+      return;
+    }
+
     await logout();
 
     setIsAuthenticated(false);
@@ -61,14 +77,18 @@ function App() {
   };
 
   const handleShowHistory = async () => {
+    if (isLoadingHistory) {
+      return;
+    }
+
     setError('');
-    setLoading(true);
+    setShowHistory(true);
+    setIsLoadingHistory(true);
 
     try {
       const scans = await getScanHistory();
 
       setScanHistory(scans);
-      setShowHistory(true);
     } catch (err) {
       console.error('Scan history error:', err);
 
@@ -83,47 +103,79 @@ function App() {
 
       setError(err.message || 'Failed to load scan history.');
     } finally {
-      setLoading(false);
+      setIsLoadingHistory(false);
     }
   };
 
   const handleScrapePage = async () => {
+    setError('');
+    setIsScraping(true);
+
     try {
-      // 1. Get the current active tab the user is looking at
-      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-      setSourceUrl(tab.url || '');
-
-      // 2. Inject a script into that tab to extract the text
-      const injectionResult = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          // This code runs inside the actual webpage, not the popup
-          return document.body.innerText;
-        },
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true
       });
 
-      // 3. Keep up to 200,000 characters so the backend can chunk large contracts
-      if (injectionResult && injectionResult[0] && injectionResult[0].result) {
-        const scrapedText = injectionResult[0].result;
-        setContractText(scrapedText.substring(0, MAX_CONTRACT_CHARS));
-        setError('');
+      if (!tab?.id) {
+        throw new Error('Could not determine the current webpage.');
       }
+
+      const injectionResult = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => document.body?.innerText || ''
+      });
+
+      const scrapedText = injectionResult?.[0]?.result;
+
+      if (typeof scrapedText !== 'string' || !scrapedText.trim()) {
+        setContractText('');
+        setSourceUrl('');
+        setAnalysis(null);
+        setError('No readable text was found on this webpage.');
+        return;
+      }
+
+      setContractText(
+        scrapedText.substring(0, MAX_CONTRACT_CHARS)
+      );
+
+      setSourceUrl(
+        typeof tab.url === 'string' && /^https?:\/\//i.test(tab.url)
+          ? tab.url
+          : ''
+      );
+
+      setAnalysis(null);
+      setError('');
     } catch (err) {
-      console.error("Scraping error:", err);
-      setError("Could not read this webpage. Chrome restricts scraping on certain system pages.");
+      console.error('Scraping error:', err);
+
+      setContractText('');
+      setSourceUrl('');
+      setAnalysis(null);
+
+      setError(
+        'Could not read this webpage. Chrome restricts scraping on certain system pages.'
+      );
+    } finally {
+      setIsScraping(false);
     }
   };
 
   const handleAnalyze = async () => {
+    if (isScraping || isAnalyzing) {
+      return;
+    }
+
     if (!contractText.trim()) {
       setError('Please enter or paste contract text first.');
       return;
     }
 
-    setLoading(true);
+    setIsAnalyzing(true);
     setError('');
-    setAnalysis('');
+    setAnalysis(null);
 
     try {
       const token = await getAuthToken();
@@ -134,14 +186,20 @@ function App() {
         return;
       }
 
-      const response = await fetch('http://localhost:5001/api/ai/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ contractText, sourceUrl }),
-      });
+      const response = await fetch(
+        'http://localhost:5001/api/ai/analyze',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            contractText,
+            sourceUrl
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -166,15 +224,23 @@ function App() {
       }
     } catch (err) {
       console.error('Analysis error:', err);
-      setError('Could not connect to backend server. Make sure port 5001 is running.');
+      setError(
+        'Could not connect to backend server. Make sure port 5001 is running.'
+      );
     } finally {
-      setLoading(false);
+      setIsAnalyzing(false);
     }
   };
 
   if (checkingAuth) {
     return (
-      <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
+      <div
+        style={{
+          width: '380px',
+          padding: '16px',
+          fontFamily: 'sans-serif'
+        }}
+      >
         <p>Checking authentication...</p>
       </div>
     );
@@ -182,12 +248,29 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
-        <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>
+      <div
+        style={{
+          width: '380px',
+          padding: '16px',
+          fontFamily: 'sans-serif'
+        }}
+      >
+        <h2
+          style={{
+            margin: '0 0 8px 0',
+            color: '#1a1a1a'
+          }}
+        >
           ClearContract AI
         </h2>
 
-        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
+        <p
+          style={{
+            margin: '0 0 16px 0',
+            fontSize: '13px',
+            color: '#666'
+          }}
+        >
           Log in to analyze contracts and save your scan history.
         </p>
 
@@ -226,24 +309,30 @@ function App() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoggingIn}
             style={{
               width: '100%',
               padding: '10px',
-              backgroundColor: loading ? '#888' : '#2563eb',
+              backgroundColor: isLoggingIn ? '#888' : '#2563eb',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
               fontWeight: 'bold',
-              cursor: loading ? 'not-allowed' : 'pointer'
+              cursor: isLoggingIn ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {isLoggingIn ? 'Logging in...' : 'Log In'}
           </button>
         </form>
 
         {error && (
-          <div style={{ marginTop: '12px', color: '#dc2626', fontSize: '12px' }}>
+          <div
+            style={{
+              marginTop: '12px',
+              color: '#dc2626',
+              fontSize: '12px'
+            }}
+          >
             {error}
           </div>
         )}
@@ -253,7 +342,13 @@ function App() {
 
   if (showHistory) {
     return (
-      <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
+      <div
+        style={{
+          width: '380px',
+          padding: '16px',
+          fontFamily: 'sans-serif'
+        }}
+      >
         <button
           onClick={() => setShowHistory(false)}
           style={{
@@ -269,12 +364,31 @@ function App() {
           ← Back to New Scan
         </button>
 
-        <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>
+        <h2
+          style={{
+            margin: '0 0 8px 0',
+            color: '#1a1a1a'
+          }}
+        >
           Scan History
         </h2>
 
-        {scanHistory.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#666' }}>
+        {isLoadingHistory ? (
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#666'
+            }}
+          >
+            Loading your scan history...
+          </p>
+        ) : scanHistory.length === 0 ? (
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#666'
+            }}
+          >
             No scans found yet.
           </p>
         ) : (
@@ -300,7 +414,12 @@ function App() {
                   {scan.sourceUrl || 'Manual contract scan'}
                 </strong>
 
-                <p style={{ margin: '6px 0', color: '#666' }}>
+                <p
+                  style={{
+                    margin: '6px 0',
+                    color: '#666'
+                  }}
+                >
                   {new Date(scan.scannedAt).toLocaleString()}
                 </p>
 
@@ -317,7 +436,12 @@ function App() {
                 )}
 
                 {scan.darkPatternsFound?.length === 0 && (
-                  <div style={{ marginTop: '8px', color: '#166534' }}>
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      color: '#166534'
+                    }}
+                  >
                     No meaningful risks identified.
                   </div>
                 )}
@@ -330,67 +454,89 @@ function App() {
   }
 
   return (
-    <div style={{ width: '380px', padding: '16px', fontFamily: 'sans-serif' }}>
-      <h2 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>ClearContract AI</h2>
+    <div
+      style={{
+        width: '380px',
+        padding: '16px',
+        fontFamily: 'sans-serif'
+      }}
+    >
+      <h2
+        style={{
+          margin: '0 0 8px 0',
+          color: '#1a1a1a'
+        }}
+      >
+        ClearContract AI
+      </h2>
 
       <button
         onClick={handleLogout}
+        disabled={isBusy}
         style={{
           width: '100%',
           marginBottom: '12px',
           padding: '8px',
-          backgroundColor: '#ef4444',
+          backgroundColor: isBusy ? '#9ca3af' : '#ef4444',
           color: '#fff',
           border: 'none',
           borderRadius: '6px',
           fontWeight: 'bold',
-          cursor: 'pointer'
+          cursor: isBusy ? 'not-allowed' : 'pointer'
         }}
       >
         Log Out
       </button>
 
-      <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
+      <p
+        style={{
+          margin: '0 0 16px 0',
+          fontSize: '13px',
+          color: '#666'
+        }}
+      >
         Paste any terms or contract clauses below to scan for hidden risks.
       </p>
 
       <button
         onClick={handleShowHistory}
-        disabled={loading}
+        disabled={isLoadingHistory}
         style={{
           width: '100%',
           marginBottom: '12px',
           padding: '8px',
-          backgroundColor: '#6b7280',
+          backgroundColor: isLoadingHistory ? '#9ca3af' : '#6b7280',
           color: '#fff',
           border: 'none',
           borderRadius: '6px',
           fontWeight: 'bold',
-          cursor: loading ? 'not-allowed' : 'pointer'
+          cursor: isLoadingHistory ? 'not-allowed' : 'pointer'
         }}
       >
-        {loading ? 'Loading History...' : 'Scan History'}
+        {isLoadingHistory ? 'Loading History...' : 'Scan History'}
       </button>
 
       <button
         onClick={handleScrapePage}
+        disabled={isScraping}
         style={{
           width: '100%',
           marginBottom: '12px',
           padding: '8px',
-          backgroundColor: '#10b981',
+          backgroundColor: isScraping ? '#9ca3af' : '#10b981',
           color: '#fff',
           border: 'none',
           borderRadius: '6px',
           fontWeight: 'bold',
-          cursor: 'pointer'
+          cursor: isScraping ? 'not-allowed' : 'pointer'
         }}
       >
-        Read Current Webpage
+        {isScraping ? 'Reading Webpage...' : 'Read Current Webpage'}
       </button>
 
       <textarea
         rows="6"
+        maxLength={MAX_CONTRACT_CHARS}
         style={{
           width: '100%',
           boxSizing: 'border-box',
@@ -403,7 +549,11 @@ function App() {
         }}
         placeholder="Paste legal text here..."
         value={contractText}
-        onChange={(e) => setContractText(e.target.value)}
+        onChange={(e) => {
+          setContractText(e.target.value);
+          setSourceUrl('');
+          setAnalysis(null);
+        }}
       />
 
       <div
@@ -411,48 +561,63 @@ function App() {
           marginTop: '6px',
           marginBottom: '12px',
           fontSize: '11px',
-          color: contractText.length >= MAX_CONTRACT_CHARS ? '#dc2626' : '#666',
+          color:
+            contractText.length >= MAX_CONTRACT_CHARS
+              ? '#dc2626'
+              : '#666',
           textAlign: 'right'
         }}
       >
-        {contractText.length.toLocaleString()} / {MAX_CONTRACT_CHARS.toLocaleString()} characters
+        {contractText.length.toLocaleString()} /{' '}
+        {MAX_CONTRACT_CHARS.toLocaleString()} characters
       </div>
 
       <button
         onClick={handleAnalyze}
-        disabled={loading}
+        disabled={isAnalyzing || isScraping}
         style={{
           width: '100%',
           marginTop: '12px',
           padding: '10px',
-          backgroundColor: loading ? '#888' : '#2563eb',
+          backgroundColor: isAnalyzing ? '#888' : '#2563eb',
           color: '#fff',
           border: 'none',
           borderRadius: '6px',
           fontWeight: 'bold',
-          cursor: loading ? 'not-allowed' : 'pointer'
+          cursor:
+            isAnalyzing || isScraping
+              ? 'not-allowed'
+              : 'pointer'
         }}
       >
-        {loading ? 'Analyzing with Gemini...' : 'Analyze Contract'}
+        {isAnalyzing ? 'Analyzing with Gemini...' : 'Analyze Contract'}
       </button>
 
       {error && (
-        <div style={{ marginTop: '12px', color: '#dc2626', fontSize: '12px' }}>
+        <div
+          style={{
+            marginTop: '12px',
+            color: '#dc2626',
+            fontSize: '12px'
+          }}
+        >
           {error}
         </div>
       )}
 
       {analysis && (
-        <div style={{
-          marginTop: '16px',
-          padding: '12px',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '6px',
-          fontSize: '12px',
-          maxHeight: '220px',
-          overflowY: 'auto',
-          textAlign: 'left'
-        }}>
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '12px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '6px',
+            fontSize: '12px',
+            maxHeight: '220px',
+            overflowY: 'auto',
+            textAlign: 'left'
+          }}
+        >
           <strong>Analysis Results:</strong>
 
           <div style={{ marginTop: '8px' }}>
@@ -465,9 +630,17 @@ function App() {
               <strong>Potential Risks</strong>
 
               {analysis.darkPatternsFound.map((pattern, index) => (
-                <div key={index} style={{ marginTop: '8px' }}>
+                <div
+                  key={index}
+                  style={{ marginTop: '8px' }}
+                >
                   <strong>{pattern.category}</strong>
-                  <p style={{ margin: '4px 0 0 0' }}>
+
+                  <p
+                    style={{
+                      margin: '4px 0 0 0'
+                    }}
+                  >
                     {pattern.explanation}
                   </p>
                 </div>
@@ -477,12 +650,12 @@ function App() {
 
           {analysis.darkPatternsFound.length === 0 && (
             <p style={{ marginTop: '8px' }}>
-              No meaningful dark patterns or consumer risks were identified.
+              No meaningful dark patterns or consumer risks were
+              identified.
             </p>
           )}
         </div>
       )}
-
     </div>
   );
 }
