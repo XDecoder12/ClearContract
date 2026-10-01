@@ -42,6 +42,37 @@ const splitContractIntoChunks = (text) => {
   return chunks;
 };
 
+const normalizeContractText = (text) => {
+  return text
+    .replace(/\0/g, '')
+    .replace(/\r\n?/g, '\n')
+    .trim();
+};
+
+const validateAndNormalizeSourceUrl = (sourceUrl) => {
+  if (sourceUrl === undefined) {
+    return undefined;
+  }
+
+  const trimmedUrl = sourceUrl.trim();
+
+  if (trimmedUrl === '') {
+    return '';
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedUrl);
+
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error('Unsupported URL protocol.');
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    throw new Error('Invalid source URL.');
+  }
+};
+
 const analysisResponseSchema = {
   type: 'object',
   properties: {
@@ -142,9 +173,9 @@ const synthesizeChunkAnalyses = async (model, chunkAnalyses) => {
   const analysisNotes = chunkAnalyses
     .map(
       (analysis, index) => `
-Analysis ${index + 1}:
-${JSON.stringify(analysis)}
-`
+    Analysis ${index + 1}:
+    ${JSON.stringify(analysis)}
+    `
     )
     .join('\n');
 
@@ -194,7 +225,15 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       });
     }
 
-    if (contractText.length > MAX_CONTRACT_CHARS) {
+    const normalizedContractText = normalizeContractText(contractText);
+
+    if (normalizedContractText.length === 0) {
+      return res.status(400).json({
+        error: 'Contract text cannot be empty.'
+      });
+    }
+
+    if (normalizedContractText.length > MAX_CONTRACT_CHARS) {
       return res.status(413).json({
         error: `Contract text exceeds the ${MAX_CONTRACT_CHARS.toLocaleString()} character limit.`
       });
@@ -206,7 +245,17 @@ router.post('/analyze', authenticateToken, async (req, res) => {
       });
     }
 
-    const contractChunks = splitContractIntoChunks(contractText);
+    let normalizedSourceUrl;
+
+    try {
+      normalizedSourceUrl = validateAndNormalizeSourceUrl(sourceUrl);
+    } catch (error) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    const contractChunks = splitContractIntoChunks(normalizedContractText);
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -261,8 +310,8 @@ router.post('/analyze', authenticateToken, async (req, res) => {
 
     const scanResult = new ScanResult({
       userId: req.user.userId,
-      sourceUrl,
-      originalText: contractText,
+      sourceUrl: normalizedSourceUrl,
+      originalText: normalizedContractText,
       darkPatternsFound,
       aiSummary
     });
