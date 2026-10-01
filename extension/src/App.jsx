@@ -1,3 +1,4 @@
+import Footer from "./components/Footer";
 import { useEffect, useState } from 'react';
 import './App.css';
 import { login, getAuthToken, getScanHistory, logout } from './auth.js';
@@ -336,6 +337,7 @@ function App() {
             {error}
           </div>
         )}
+        <Footer />
       </div>
     );
   }
@@ -449,6 +451,7 @@ function App() {
             ))}
           </div>
         )}
+        <Footer />
       </div>
     );
   }
@@ -656,6 +659,7 @@ function App() {
           )}
         </div>
       )}
+      <Footer />
     </div>
   );
 }
