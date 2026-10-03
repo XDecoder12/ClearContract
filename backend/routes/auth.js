@@ -105,6 +105,12 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(400).json({
+        error: 'User already exists with this email.'
+      });
+    }
+
     console.error('Registration Error:', error);
 
     res.status(500).json({

@@ -224,6 +224,54 @@ describe('Authentication', () => {
       'Email and password are required.'
     );
   });
+
+    test('handles concurrent registration for the same email safely', async () => {
+    const registrationPayload = {
+      email: 'race-test@example.com',
+      password: 'TestPassword123!'
+    };
+
+    const [firstResponse, secondResponse] = await Promise.all([
+      request(app)
+        .post('/api/auth/register')
+        .send(registrationPayload),
+
+      request(app)
+        .post('/api/auth/register')
+        .send(registrationPayload)
+    ]);
+
+    const statuses = [
+      firstResponse.status,
+      secondResponse.status
+    ].sort();
+
+    expect(statuses).toEqual([201, 400]);
+
+    const userCount = await User.countDocuments({
+      email: 'race-test@example.com'
+    });
+
+    expect(userCount).toBe(1);
+
+    const responses = [firstResponse, secondResponse];
+
+    const successfulResponse = responses.find(
+      (response) => response.status === 201
+    );
+
+    const rejectedResponse = responses.find(
+      (response) => response.status === 400
+    );
+
+    expect(successfulResponse.body.message).toBe(
+      'User registered successfully!'
+    );
+
+    expect(rejectedResponse.body.error).toBe(
+      'User already exists with this email.'
+    );
+  });
 });
 
 describe('Protected routes', () => {
