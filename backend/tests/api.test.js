@@ -132,6 +132,146 @@ describe('Authentication', () => {
       'Invalid email or password.'
     );
   });
+
+    test('rejects registration with missing credentials', async () => {
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'test@example.com'
+      })
+      .expect(400);
+
+    expect(response.body.error).toBe(
+      'Email and password are required.'
+    );
+  });
+
+  test('rejects registration with an invalid email format', async () => {
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'not-an-email',
+        password: 'TestPassword123!'
+      })
+      .expect(400);
+
+    expect(response.body.error).toBe(
+      'Invalid email format.'
+    );
+  });
+
+  test('rejects registration with a short password', async () => {
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'short-password@example.com',
+        password: '1234567'
+      })
+      .expect(400);
+
+    expect(response.body.error).toBe(
+      'Password must be at least 8 characters.'
+    );
+  });
+
+  test('normalizes email addresses during registration', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: '  Test@Example.COM  ',
+        password: 'TestPassword123!'
+      })
+      .expect(201);
+
+    const user = await User.findOne({
+      email: 'test@example.com'
+    });
+
+    expect(user).not.toBeNull();
+    expect(user.email).toBe('test@example.com');
+  });
+
+  test('allows login with normalized email casing', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'normalized@example.com',
+        password: 'TestPassword123!'
+      })
+      .expect(201);
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: '  NORMALIZED@EXAMPLE.COM  ',
+        password: 'TestPassword123!'
+      })
+      .expect(200);
+
+    expect(response.body.message).toBe('Login successful!');
+    expect(typeof response.body.token).toBe('string');
+  });
+
+  test('rejects login with missing credentials', async () => {
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'login@example.com'
+      })
+      .expect(400);
+
+    expect(response.body.error).toBe(
+      'Email and password are required.'
+    );
+  });
+
+    test('handles concurrent registration for the same email safely', async () => {
+    const registrationPayload = {
+      email: 'race-test@example.com',
+      password: 'TestPassword123!'
+    };
+
+    const [firstResponse, secondResponse] = await Promise.all([
+      request(app)
+        .post('/api/auth/register')
+        .send(registrationPayload),
+
+      request(app)
+        .post('/api/auth/register')
+        .send(registrationPayload)
+    ]);
+
+    const statuses = [
+      firstResponse.status,
+      secondResponse.status
+    ].sort();
+
+    expect(statuses).toEqual([201, 400]);
+
+    const userCount = await User.countDocuments({
+      email: 'race-test@example.com'
+    });
+
+    expect(userCount).toBe(1);
+
+    const responses = [firstResponse, secondResponse];
+
+    const successfulResponse = responses.find(
+      (response) => response.status === 201
+    );
+
+    const rejectedResponse = responses.find(
+      (response) => response.status === 400
+    );
+
+    expect(successfulResponse.body.message).toBe(
+      'User registered successfully!'
+    );
+
+    expect(rejectedResponse.body.error).toBe(
+      'User already exists with this email.'
+    );
+  });
 });
 
 describe('Protected routes', () => {
