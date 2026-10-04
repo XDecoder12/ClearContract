@@ -168,3 +168,38 @@ body {
   border-radius: 10px;
   box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06);
 }
+
+.app-footer {
+  width: 100%;
+  margin-top: 28px;
+  padding: 16px 0 8px;
+  border-top: 1px solid #d9dce1;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.footer-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.footer-main a {
+  color: #2563eb;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-main a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.footer-copyright {
+  font-size: 12px;
+  color: #6b7280;
+}

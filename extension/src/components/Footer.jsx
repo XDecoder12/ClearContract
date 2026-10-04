@@ -1,12 +1,10 @@
-function Footer() {
+const Footer = () => {
   return (
     <footer className="app-footer">
-      <div className="footer-top">
-        <span className="footer-version">ClearContract v1.0.0</span>
-
+      <div className="footer-main">
+        <span>ClearContract v1.0.0</span>
         <a
-          className="footer-link"
-          href="https://ai.google.dev/gemini-api"
+          href="https://ai.google.dev/"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -15,10 +13,10 @@ function Footer() {
       </div>
 
       <div className="footer-copyright">
-        © {new Date().getFullYear()} ClearContract. All rights reserved.
+        © 2026 ClearContract. All rights reserved.
       </div>
     </footer>
   );
-}
+};
 
 export default Footer;
