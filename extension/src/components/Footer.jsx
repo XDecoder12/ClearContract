@@ -3,6 +3,7 @@ const Footer = () => {
     <footer className="app-footer">
       <div className="footer-main">
         <span>ClearContract v1.0.0</span>
+
         <a
           href="https://ai.google.dev/"
           target="_blank"
