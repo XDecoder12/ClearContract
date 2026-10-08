@@ -1,0 +1,43 @@
+SAMPLE CONTRACT — STREAMING SERVICE
+QA TEST DOCUMENT — NOT AN ACTUAL NETFLIX AGREEMENT
+
+This fictional contract is designed to test ClearContract's ability to
+identify consumer risks commonly found in streaming subscription agreements.
+
+1. SUBSCRIPTION AND RENEWAL
+
+The subscription continues on a recurring basis until cancelled by the
+customer. Unless cancelled before the next billing date, the subscription
+will renew automatically using the payment method associated with the
+customer's account.
+
+2. PRICE CHANGES
+
+The service provider may change the subscription price. Customers will be
+notified before a price change takes effect. Continued use of the service
+after the new price becomes effective will constitute acceptance of the
+updated price.
+
+3. CANCELLATION AND REFUNDS
+
+Customers may cancel their subscription through the account management
+process. Cancellation normally takes effect at the end of the current
+billing period. Payments already made for the current period are generally
+not refundable.
+
+4. SERVICE AND CONTENT
+
+The provider may modify, suspend, or discontinue parts of the service and
+may add or remove content from the service.
+
+5. ACCOUNT USE
+
+Accounts are intended for personal use. The provider may restrict or
+terminate access when it determines that the account has violated the
+applicable terms.
+
+6. DATA AND PERSONALIZATION
+
+The provider may collect information about account activity, devices,
+service usage, and interactions with the platform to operate and improve
+the service and personalize the user experience.

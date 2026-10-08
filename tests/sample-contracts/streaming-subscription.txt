@@ -1,0 +1,46 @@
+SAMPLE CONTRACT — DIGITAL ENTERTAINMENT SUBSCRIPTION
+QA TEST DOCUMENT — FICTIONAL CONTRACT
+
+1. SUBSCRIPTION PERIOD
+
+The subscription begins when the customer completes registration and
+continues until cancelled.
+
+2. RENEWAL
+
+The subscription automatically renews at the end of each billing period
+at the then-current subscription price unless the customer cancels before
+renewal.
+
+3. PROMOTIONAL OFFER
+
+A promotional subscription may be offered at a reduced price for a
+specified period. After the promotional period ends, the standard
+subscription price will apply unless the subscription is cancelled.
+
+4. CANCELLATION
+
+Cancellation takes effect at the end of the current billing period.
+Access normally remains available until that date.
+
+5. REFUNDS
+
+Previously paid subscription fees are generally non-refundable except
+where required by applicable law or specifically stated in the applicable
+offer.
+
+6. CONTENT
+
+The provider may add, remove, replace, or restrict access to particular
+content because of licensing, technical, business, or other reasons.
+
+7. TERMS CHANGES
+
+The provider may update the agreement by publishing a revised version.
+Continued use of the service after the updated terms take effect may
+constitute acceptance of the changes.
+
+8. DISPUTES
+
+Certain disputes may be subject to arbitration or other dispute-resolution
+requirements depending on the customer's location and applicable law.
