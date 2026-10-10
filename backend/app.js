@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 
 import aiRoutes from './routes/ai.js';
@@ -17,8 +18,8 @@ const allowedOrigins = (
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests that do not send an Origin header,
-    // such as Supertest and other server-to-server requests.
+    // Allow requests without an Origin header, including
+    // Supertest and server-to-server requests.
     if (!origin) {
       return callback(null, true);
     }
@@ -27,6 +28,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
+    // Do not grant CORS access to unknown origins.
     return callback(null, false);
   }
 };
@@ -40,6 +42,9 @@ const aiRateLimiter = rateLimit({
     error: 'Too many analysis requests. Please try again later.'
   }
 });
+
+// Add standard security-related response headers.
+app.use(helmet());
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cors(corsOptions));
