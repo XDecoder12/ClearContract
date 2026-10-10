@@ -1,11 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "ClearContract AI Guardian",
+  "name": "ClearContract",
   "version": "1.0.0",
   "description": "Instantly analyze contracts and terms of service using Google Gemini AI.",
+  "icons": {
+    "16": "icons/16x16.png",
+    "48": "icons/48x48.png",
+    "128": "icons/128x128.png"
+  },
   "action": {
     "default_popup": "index.html",
-    "default_title": "ClearContract AI Guardian"
+    "default_title": "ClearContract",
+    "default_icon": {
+      "16": "icons/16x16.png",
+      "48": "icons/48x48.png",
+      "128": "icons/128x128.png"
+    }
   },
   "permissions": [
     "activeTab",
