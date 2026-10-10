@@ -1,0 +1,47 @@
+SAMPLE CONTRACT — MUSIC STREAMING SERVICE
+QA TEST DOCUMENT — NOT AN ACTUAL SPOTIFY AGREEMENT
+
+1. PAID SUBSCRIPTIONS
+
+Paid subscriptions are billed on a recurring basis at the applicable
+subscription price.
+
+2. AUTOMATIC RENEWAL
+
+Unless the subscription is a prepaid subscription, the subscription will
+automatically renew at the end of the applicable subscription period unless
+the customer cancels before the current period ends.
+
+3. PRICE CHANGES
+
+The provider may change subscription prices and will provide notice before
+the new price takes effect. If the customer continues using the service
+after the change becomes effective, the new price will apply.
+
+4. CANCELLATION
+
+Customers may cancel their subscription using the account cancellation
+process. Cancellation normally becomes effective at the end of the current
+billing period.
+
+5. REFUNDS
+
+The provider generally does not provide refunds or credits for partially
+used subscription periods except where specifically required or provided
+under the applicable terms.
+
+6. TRIALS
+
+A promotional trial may convert into a paid subscription when the trial
+period ends unless the customer cancels according to the applicable
+cancellation requirements.
+
+7. SERVICE CHANGES
+
+The provider may modify, suspend, or discontinue features, subscription
+plans, promotional offerings, or specific content.
+
+8. ACCOUNT SUSPENSION
+
+The provider may suspend or terminate access when it believes the customer
+has violated the applicable terms.

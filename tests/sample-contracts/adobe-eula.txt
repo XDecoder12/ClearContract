@@ -1,0 +1,51 @@
+SAMPLE CONTRACT — CREATIVE SOFTWARE SUBSCRIPTION
+QA TEST DOCUMENT — NOT AN ACTUAL ADOBE EULA
+
+1. LICENSE
+
+The software is provided under a subscription-based license. Access to the
+software ends when the applicable license or subscription expires or is
+terminated.
+
+2. PRODUCT-SPECIFIC TERMS
+
+Additional product-specific terms may apply to particular services or
+software. If those terms conflict with the general terms, the product-
+specific terms may control for that service.
+
+3. FEES AND PAYMENT
+
+Customers are responsible for applicable subscription charges, taxes, and
+other amounts specified during purchase.
+
+4. UPDATES
+
+The provider may update the services and software and may change or
+discontinue particular features.
+
+5. CUSTOMER CONTENT
+
+Customers retain ownership of their content. However, the provider may
+require certain permissions or licenses to process, store, display, or
+deliver the customer's content as part of providing the service.
+
+6. TERMINATION
+
+The provider may suspend or terminate access when the customer violates
+the agreement or when the service is discontinued.
+
+7. LIABILITY
+
+To the extent permitted by applicable law, the provider limits liability
+for certain indirect, incidental, special, or consequential damages.
+
+8. DISPUTES
+
+Certain disputes may be subject to arbitration and limitations on
+participation in class actions, subject to applicable law and the terms
+governing the customer's location.
+
+9. PRIVACY
+
+The provider may process information associated with the customer's use
+of its services and software in accordance with its privacy policies.

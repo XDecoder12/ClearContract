@@ -1,0 +1,36 @@
+SAMPLE CONTRACT — GYM MEMBERSHIP AGREEMENT
+QA TEST DOCUMENT — FICTIONAL CONTRACT
+
+1. MEMBERSHIP COMMITMENT
+
+The membership requires an initial twelve-month commitment.
+
+2. AUTOMATIC RENEWAL
+
+After the initial commitment ends, the membership automatically continues
+on a monthly basis unless cancelled.
+
+3. CANCELLATION
+
+Members must submit a cancellation request at least thirty days before
+the next billing date.
+
+4. CANCELLATION FEE
+
+A processing fee of INR 499 may be charged when a membership is cancelled
+during the minimum commitment period.
+
+5. PAYMENTS
+
+Membership fees are charged according to the selected membership plan.
+Payments already processed for a billing period are generally not refundable.
+
+6. PRICE CHANGES
+
+The gym may change membership fees after providing notice to members.
+
+7. LIABILITY
+
+Members are responsible for following equipment instructions and safety
+rules. To the extent permitted by law, the gym limits responsibility for
+certain injuries or losses arising from improper use of equipment.
