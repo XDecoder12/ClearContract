@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -56,6 +57,16 @@ app.use('/api/scans', scansRoutes);
 
 app.get('/', (req, res) => {
   res.send('ClearContract AI Guardian API is running.');
+});
+
+app.get('/health', (req, res) => {
+  const databaseConnected =
+    mongoose.connection.readyState === 1;
+
+  return res.status(databaseConnected ? 200 : 503).json({
+    status: databaseConnected ? 'ok' : 'unavailable',
+    database: databaseConnected ? 'connected' : 'disconnected'
+  });
 });
 
 export default app;
