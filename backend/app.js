@@ -7,6 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
 import scansRoutes from './routes/scans.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/ai/analyze', aiRateLimiter);
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scansRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.send('ClearContract AI Guardian API is running.');
