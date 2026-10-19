@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { login, getAuthToken, getScanHistory, logout } from './auth.js';
-
+import Login from './components/Login.jsx';
+import Register from './components/Register.jsx';
 const MAX_CONTRACT_CHARS = 200000;
 
 function App() {
@@ -18,6 +19,8 @@ function App() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authScreen, setAuthScreen] = useState('login');
+  const [authMessage, setAuthMessage] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -247,98 +250,40 @@ function App() {
   }
 
   if (!isAuthenticated) {
+  if (authScreen === 'register') {
     return (
-      <div
-        style={{
-          width: '380px',
-          padding: '16px',
-          fontFamily: 'sans-serif'
+      <Register
+        onRegistered={() => {
+          setAuthMessage('Registration successful! Please log in.');
+          setError('');
+          setAuthScreen('login');
         }}
-      >
-        <h2
-          style={{
-            margin: '0 0 8px 0',
-            color: '#1a1a1a'
-          }}
-        >
-          ClearContract AI
-        </h2>
-
-        <p
-          style={{
-            margin: '0 0 16px 0',
-            fontSize: '13px',
-            color: '#666'
-          }}
-        >
-          Log in to analyze contracts and save your scan history.
-        </p>
-
-        <form onSubmit={handleLogin}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '8px',
-              marginBottom: '8px',
-              borderRadius: '6px',
-              border: '1px solid #ccc'
-            }}
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '8px',
-              marginBottom: '12px',
-              borderRadius: '6px',
-              border: '1px solid #ccc'
-            }}
-          />
-
-          <button
-            type="submit"
-            disabled={isLoggingIn}
-            style={{
-              width: '100%',
-              padding: '10px',
-              backgroundColor: isLoggingIn ? '#888' : '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: isLoggingIn ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isLoggingIn ? 'Logging in...' : 'Log In'}
-          </button>
-        </form>
-
-        {error && (
-          <div
-            style={{
-              marginTop: '12px',
-              color: '#dc2626',
-              fontSize: '12px'
-            }}
-          >
-            {error}
-          </div>
-        )}
-      </div>
+        onBackToLogin={() => {
+          setError('');
+          setAuthScreen('login');
+        }}
+      />
     );
   }
+
+  return (
+    <Login
+      email={email}
+      password={password}
+      setEmail={setEmail}
+      setPassword={setPassword}
+      handleLogin={handleLogin}
+      isLoggingIn={isLoggingIn}
+      error={error}
+      authMessage={authMessage}
+      onShowRegister={() => {
+        setAuthMessage('');
+        setError('');
+        setAuthScreen('register');
+      }}
+    />
+  );
+}
 
   if (showHistory) {
     return (
