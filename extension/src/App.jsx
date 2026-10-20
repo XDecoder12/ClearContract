@@ -1,31 +1,52 @@
+
 import { useEffect, useState } from 'react';
 import './App.css';
-import { login, getAuthToken, getScanHistory, logout } from './auth.js';
+
+import {
+  login,
+  getAuthToken,
+  getScanHistory,
+  logout
+} from './auth.js';
+
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
+import Navigation from './components/Navigation.jsx';
+
 const MAX_CONTRACT_CHARS = 200000;
 
 function App() {
+  // Contract scanner state
   const [contractText, setContractText] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [analysis, setAnalysis] = useState(null);
 
+  // Loading states
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Error messages
   const [error, setError] = useState('');
 
+  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Login and registration screens
   const [authScreen, setAuthScreen] = useState('login');
   const [authMessage, setAuthMessage] = useState('');
+
+  // Login form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // Saved scans
   const [scanHistory, setScanHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
+
+  // Popup navigation
+  const [activeTab, setActiveTab] = useState('scanner');
 
   const isBusy =
     isLoggingIn ||
@@ -33,71 +54,105 @@ function App() {
     isScraping ||
     isAnalyzing;
 
+  // Check saved authentication when popup opens
   useEffect(() => {
     const checkAuth = async () => {
-      const token = await getAuthToken();
-
-      setIsAuthenticated(!!token);
-      setCheckingAuth(false);
+      try {
+        const token = await getAuthToken();
+        setIsAuthenticated(!!token);
+      } catch (err) {
+        console.error('Authentication check error:', err);
+        setIsAuthenticated(false);
+        setError('Could not check your login status.');
+      } finally {
+        setCheckingAuth(false);
+      }
     };
 
     checkAuth();
   }, []);
 
+  // Handle user login
   const handleLogin = async (event) => {
     event.preventDefault();
 
     setError('');
+    setAuthMessage('');
     setIsLoggingIn(true);
 
     try {
       await login(email, password);
 
       setIsAuthenticated(true);
+      setActiveTab('scanner');
       setPassword('');
+      setError('');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed.');
+
+      if (err instanceof TypeError) {
+        setError('Cannot connect to the server. Please try again.');
+      } else {
+        setError(err.message || 'Login failed.');
+      }
     } finally {
       setIsLoggingIn(false);
     }
   };
 
+  // Handle user logout
   const handleLogout = async () => {
     if (isBusy) {
       return;
     }
 
-    await logout();
+    try {
+      await logout();
 
-    setIsAuthenticated(false);
-    setShowHistory(false);
-    setScanHistory([]);
-    setContractText('');
-    setSourceUrl('');
-    setAnalysis(null);
-    setError('');
+      setIsAuthenticated(false);
+      setAuthScreen('login');
+      setActiveTab('scanner');
+
+      setEmail('');
+      setPassword('');
+
+      setScanHistory([]);
+      setContractText('');
+      setSourceUrl('');
+      setAnalysis(null);
+
+      setError('');
+      setAuthMessage('');
+    } catch (err) {
+      console.error('Logout error:', err);
+      setError('Could not log out. Please try again.');
+    }
   };
 
+  // Fetch previously saved scans
   const handleShowHistory = async () => {
     if (isLoadingHistory) {
       return;
     }
 
     setError('');
-    setShowHistory(true);
+    setActiveTab('history');
     setIsLoadingHistory(true);
 
     try {
       const scans = await getScanHistory();
-
       setScanHistory(scans);
     } catch (err) {
       console.error('Scan history error:', err);
 
-      if (err.message === 'Your session has expired. Please log in again.') {
+      if (
+        err.message ===
+        'Your session has expired. Please log in again.'
+      ) {
         setIsAuthenticated(false);
-        setShowHistory(false);
+        setAuthScreen('login');
+        setActiveTab('scanner');
+
         setScanHistory([]);
         setContractText('');
         setSourceUrl('');
@@ -110,6 +165,17 @@ function App() {
     }
   };
 
+  // Switch between Scanner, History and Account
+  const handleTabChange = (tab) => {
+    if (tab === 'history') {
+      handleShowHistory();
+    } else {
+      setActiveTab(tab);
+      setError('');
+    }
+  };
+
+  // Read text from the current webpage
   const handleScrapePage = async () => {
     setError('');
     setIsScraping(true);
@@ -131,10 +197,14 @@ function App() {
 
       const scrapedText = injectionResult?.[0]?.result;
 
-      if (typeof scrapedText !== 'string' || !scrapedText.trim()) {
+      if (
+        typeof scrapedText !== 'string' ||
+        !scrapedText.trim()
+      ) {
         setContractText('');
         setSourceUrl('');
         setAnalysis(null);
+
         setError('No readable text was found on this webpage.');
         return;
       }
@@ -144,7 +214,8 @@ function App() {
       );
 
       setSourceUrl(
-        typeof tab.url === 'string' && /^https?:\/\//i.test(tab.url)
+        typeof tab.url === 'string' &&
+        /^https?:\/\//i.test(tab.url)
           ? tab.url
           : ''
       );
@@ -166,6 +237,7 @@ function App() {
     }
   };
 
+  // Analyze contract through the backend Gemini API
   const handleAnalyze = async () => {
     if (isScraping || isAnalyzing) {
       return;
@@ -185,6 +257,7 @@ function App() {
 
       if (!token) {
         setIsAuthenticated(false);
+        setAuthScreen('login');
         setError('Please log in again.');
         return;
       }
@@ -195,12 +268,12 @@ function App() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({
             contractText,
             sourceUrl
-          }),
+          })
         }
       );
 
@@ -210,7 +283,9 @@ function App() {
         await logout();
 
         setIsAuthenticated(false);
-        setShowHistory(false);
+        setAuthScreen('login');
+        setActiveTab('scanner');
+
         setScanHistory([]);
         setContractText('');
         setSourceUrl('');
@@ -227,6 +302,7 @@ function App() {
       }
     } catch (err) {
       console.error('Analysis error:', err);
+
       setError(
         'Could not connect to backend server. Make sure port 5001 is running.'
       );
@@ -235,6 +311,7 @@ function App() {
     }
   };
 
+  // Show loading screen while checking authentication
   if (checkingAuth) {
     return (
       <div
@@ -249,354 +326,396 @@ function App() {
     );
   }
 
+  // Show Login or Register for unauthenticated users
   if (!isAuthenticated) {
-  if (authScreen === 'register') {
+    if (authScreen === 'register') {
+      return (
+        <Register
+          onRegistered={() => {
+            setAuthMessage('Registration successful! Please log in.');
+            setError('');
+            setAuthScreen('login');
+          }}
+          onBackToLogin={() => {
+            setError('');
+            setAuthScreen('login');
+          }}
+        />
+      );
+    }
+
     return (
-      <Register
-        onRegistered={() => {
-          setAuthMessage('Registration successful! Please log in.');
+      <Login
+        email={email}
+        password={password}
+        setEmail={setEmail}
+        setPassword={setPassword}
+        handleLogin={handleLogin}
+        isLoggingIn={isLoggingIn}
+        error={error}
+        authMessage={authMessage}
+        onShowRegister={() => {
+          setAuthMessage('');
           setError('');
-          setAuthScreen('login');
-        }}
-        onBackToLogin={() => {
-          setError('');
-          setAuthScreen('login');
+          setAuthScreen('register');
         }}
       />
     );
   }
 
-  return (
-    <Login
-      email={email}
-      password={password}
-      setEmail={setEmail}
-      setPassword={setPassword}
-      handleLogin={handleLogin}
-      isLoggingIn={isLoggingIn}
-      error={error}
-      authMessage={authMessage}
-      onShowRegister={() => {
-        setAuthMessage('');
-        setError('');
-        setAuthScreen('register');
-      }}
-    />
-  );
-}
-
-  if (showHistory) {
-    return (
-      <div
-        style={{
-          width: '380px',
-          padding: '16px',
-          fontFamily: 'sans-serif'
-        }}
-      >
-        <button
-          onClick={() => setShowHistory(false)}
-          style={{
-            marginBottom: '12px',
-            padding: '6px 10px',
-            backgroundColor: '#e5e7eb',
-            color: '#1f2937',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          ← Back to New Scan
-        </button>
-
-        <h2
-          style={{
-            margin: '0 0 8px 0',
-            color: '#1a1a1a'
-          }}
-        >
-          Scan History
-        </h2>
-
-        {isLoadingHistory ? (
-          <p
-            style={{
-              fontSize: '13px',
-              color: '#666'
-            }}
-          >
-            Loading your scan history...
-          </p>
-        ) : scanHistory.length === 0 ? (
-          <p
-            style={{
-              fontSize: '13px',
-              color: '#666'
-            }}
-          >
-            No scans found yet.
-          </p>
-        ) : (
-          <div
-            style={{
-              maxHeight: '400px',
-              overflowY: 'auto'
-            }}
-          >
-            {scanHistory.map((scan) => (
-              <div
-                key={scan._id}
-                style={{
-                  marginBottom: '12px',
-                  padding: '12px',
-                  backgroundColor: '#f3f4f6',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  textAlign: 'left'
-                }}
-              >
-                <strong>
-                  {scan.sourceUrl || 'Manual contract scan'}
-                </strong>
-
-                <p
-                  style={{
-                    margin: '6px 0',
-                    color: '#666'
-                  }}
-                >
-                  {new Date(scan.scannedAt).toLocaleString()}
-                </p>
-
-                <p style={{ margin: '6px 0' }}>
-                  {scan.aiSummary}
-                </p>
-
-                {scan.darkPatternsFound?.length > 0 && (
-                  <div style={{ marginTop: '8px' }}>
-                    <strong>
-                      Potential Risks: {scan.darkPatternsFound.length}
-                    </strong>
-                  </div>
-                )}
-
-                {scan.darkPatternsFound?.length === 0 && (
-                  <div
-                    style={{
-                      marginTop: '8px',
-                      color: '#166534'
-                    }}
-                  >
-                    No meaningful risks identified.
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
+  // Main authenticated extension interface
   return (
     <div
       style={{
         width: '380px',
         padding: '16px',
-        fontFamily: 'sans-serif'
+        fontFamily: 'sans-serif',
+        boxSizing: 'border-box'
       }}
     >
       <h2
         style={{
-          margin: '0 0 8px 0',
+          margin: '0 0 12px 0',
           color: '#1a1a1a'
         }}
       >
         ClearContract AI
       </h2>
 
-      <button
-        onClick={handleLogout}
-        disabled={isBusy}
-        style={{
-          width: '100%',
-          marginBottom: '12px',
-          padding: '8px',
-          backgroundColor: isBusy ? '#9ca3af' : '#ef4444',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          cursor: isBusy ? 'not-allowed' : 'pointer'
-        }}
-      >
-        Log Out
-      </button>
-
-      <p
-        style={{
-          margin: '0 0 16px 0',
-          fontSize: '13px',
-          color: '#666'
-        }}
-      >
-        Paste any terms or contract clauses below to scan for hidden risks.
-      </p>
-
-      <button
-        onClick={handleShowHistory}
-        disabled={isLoadingHistory}
-        style={{
-          width: '100%',
-          marginBottom: '12px',
-          padding: '8px',
-          backgroundColor: isLoadingHistory ? '#9ca3af' : '#6b7280',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          cursor: isLoadingHistory ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {isLoadingHistory ? 'Loading History...' : 'Scan History'}
-      </button>
-
-      <button
-        onClick={handleScrapePage}
-        disabled={isScraping}
-        style={{
-          width: '100%',
-          marginBottom: '12px',
-          padding: '8px',
-          backgroundColor: isScraping ? '#9ca3af' : '#10b981',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          cursor: isScraping ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {isScraping ? 'Reading Webpage...' : 'Read Current Webpage'}
-      </button>
-
-      <textarea
-        rows="6"
-        maxLength={MAX_CONTRACT_CHARS}
-        style={{
-          width: '100%',
-          boxSizing: 'border-box',
-          padding: '8px',
-          borderRadius: '6px',
-          border: '1px solid #ccc',
-          fontSize: '13px',
-          fontFamily: 'inherit',
-          resize: 'vertical'
-        }}
-        placeholder="Paste legal text here..."
-        value={contractText}
-        onChange={(e) => {
-          setContractText(e.target.value);
-          setSourceUrl('');
-          setAnalysis(null);
-        }}
+      {/* Three-tab navigation */}
+      <Navigation
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
       />
 
-      <div
-        style={{
-          marginTop: '6px',
-          marginBottom: '12px',
-          fontSize: '11px',
-          color:
-            contractText.length >= MAX_CONTRACT_CHARS
-              ? '#dc2626'
-              : '#666',
-          textAlign: 'right'
-        }}
-      >
-        {contractText.length.toLocaleString()} /{' '}
-        {MAX_CONTRACT_CHARS.toLocaleString()} characters
-      </div>
+      {/* SCANNER TAB */}
+      {activeTab === 'scanner' && (
+        <div>
+          <p
+            style={{
+              margin: '0 0 16px 0',
+              fontSize: '13px',
+              color: '#666'
+            }}
+          >
+            Paste any terms or contract clauses below to scan
+            for hidden risks.
+          </p>
 
-      <button
-        onClick={handleAnalyze}
-        disabled={isAnalyzing || isScraping}
-        style={{
-          width: '100%',
-          marginTop: '12px',
-          padding: '10px',
-          backgroundColor: isAnalyzing ? '#888' : '#2563eb',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          cursor:
-            isAnalyzing || isScraping
-              ? 'not-allowed'
-              : 'pointer'
-        }}
-      >
-        {isAnalyzing ? 'Analyzing with Gemini...' : 'Analyze Contract'}
-      </button>
+          <button
+            onClick={handleScrapePage}
+            disabled={isScraping || isAnalyzing}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginBottom: '12px',
+              backgroundColor: isScraping ? '#9ca3af' : '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: isScraping ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isScraping
+              ? 'Reading Webpage...'
+              : 'Read Current Webpage'}
+          </button>
 
-      {error && (
-        <div
-          style={{
-            marginTop: '12px',
-            color: '#dc2626',
-            fontSize: '12px'
-          }}
-        >
-          {error}
+          <textarea
+            rows="6"
+            maxLength={MAX_CONTRACT_CHARS}
+            placeholder="Paste legal text here..."
+            value={contractText}
+            onChange={(e) => {
+              setContractText(e.target.value);
+              setSourceUrl('');
+              setAnalysis(null);
+            }}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '8px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              fontSize: '13px',
+              fontFamily: 'inherit',
+              resize: 'vertical'
+            }}
+          />
+
+          <div
+            style={{
+              marginTop: '6px',
+              marginBottom: '12px',
+              fontSize: '11px',
+              color:
+                contractText.length >= MAX_CONTRACT_CHARS
+                  ? '#dc2626'
+                  : '#666',
+              textAlign: 'right'
+            }}
+          >
+            {contractText.length.toLocaleString()} /{' '}
+            {MAX_CONTRACT_CHARS.toLocaleString()} characters
+          </div>
+
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || isScraping}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginTop: '12px',
+              backgroundColor: isAnalyzing ? '#888' : '#2563eb',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor:
+                isAnalyzing || isScraping
+                  ? 'not-allowed'
+                  : 'pointer'
+            }}
+          >
+            {isAnalyzing
+              ? 'Analyzing with Gemini...'
+              : 'Analyze Contract'}
+          </button>
+
+          {error && (
+            <p
+              style={{
+                color: '#dc2626',
+                fontSize: '12px',
+                marginTop: '12px'
+              }}
+            >
+              {error}
+            </p>
+          )}
+
+          {/* Gemini analysis results */}
+          {analysis && (
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '6px',
+                fontSize: '12px',
+                maxHeight: '220px',
+                overflowY: 'auto',
+                textAlign: 'left'
+              }}
+            >
+              <strong>Analysis Results:</strong>
+
+              <div style={{ marginTop: '8px' }}>
+                <strong>Summary</strong>
+                <p>{analysis.aiSummary}</p>
+              </div>
+
+              {analysis.darkPatternsFound.length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <strong>Potential Risks</strong>
+
+                  {analysis.darkPatternsFound.map(
+                    (pattern, index) => (
+                      <div
+                        key={index}
+                        style={{ marginTop: '8px' }}
+                      >
+                        <strong>{pattern.category}</strong>
+
+                        <p style={{ margin: '4px 0 0 0' }}>
+                          {pattern.explanation}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+
+              {analysis.darkPatternsFound.length === 0 && (
+                <p style={{ marginTop: '8px' }}>
+                  No meaningful dark patterns or consumer risks
+                  were identified.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {analysis && (
-        <div
-          style={{
-            marginTop: '16px',
-            padding: '12px',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '6px',
-            fontSize: '12px',
-            maxHeight: '220px',
-            overflowY: 'auto',
-            textAlign: 'left'
-          }}
-        >
-          <strong>Analysis Results:</strong>
+      {/* HISTORY TAB */}
+      {activeTab === 'history' && (
+        <div>
+          <h3
+            style={{
+              margin: '0 0 12px 0',
+              color: '#1a1a1a'
+            }}
+          >
+            Scan History
+          </h3>
 
-          <div style={{ marginTop: '8px' }}>
-            <strong>Summary</strong>
-            <p>{analysis.aiSummary}</p>
-          </div>
-
-          {analysis.darkPatternsFound.length > 0 && (
-            <div style={{ marginTop: '12px' }}>
-              <strong>Potential Risks</strong>
-
-              {analysis.darkPatternsFound.map((pattern, index) => (
+          {isLoadingHistory ? (
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#666'
+              }}
+            >
+              Loading your scan history...
+            </p>
+          ) : error ? (
+            <p
+              style={{
+                fontSize: '12px',
+                color: '#dc2626'
+              }}
+            >
+              {error}
+            </p>
+          ) : scanHistory.length === 0 ? (
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#666'
+              }}
+            >
+              No scans found yet.
+            </p>
+          ) : (
+            <div
+              style={{
+                maxHeight: '400px',
+                overflowY: 'auto'
+              }}
+            >
+              {scanHistory.map((scan) => (
                 <div
-                  key={index}
-                  style={{ marginTop: '8px' }}
+                  key={scan._id}
+                  style={{
+                    marginBottom: '12px',
+                    padding: '12px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    textAlign: 'left'
+                  }}
                 >
-                  <strong>{pattern.category}</strong>
+                  <strong>
+                    {scan.sourceUrl || 'Manual contract scan'}
+                  </strong>
 
                   <p
                     style={{
-                      margin: '4px 0 0 0'
+                      margin: '6px 0',
+                      color: '#666'
                     }}
                   >
-                    {pattern.explanation}
+                    {new Date(scan.scannedAt).toLocaleString()}
                   </p>
+
+                  <p style={{ margin: '6px 0' }}>
+                    {scan.aiSummary}
+                  </p>
+
+                  {scan.darkPatternsFound?.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <strong>
+                        Potential Risks: {scan.darkPatternsFound.length}
+                      </strong>
+
+                      {scan.darkPatternsFound.map(
+                        (pattern, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              marginTop: '8px',
+                              padding: '8px',
+                              backgroundColor: '#fff',
+                              borderRadius: '4px'
+                            }}
+                          >
+                            <strong>{pattern.category}</strong>
+                            <p>{pattern.explanation}</p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {scan.darkPatternsFound?.length === 0 && (
+                    <p
+                      style={{
+                        color: '#166534',
+                        marginTop: '8px'
+                      }}
+                    >
+                      No meaningful risks identified.
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
 
-          {analysis.darkPatternsFound.length === 0 && (
-            <p style={{ marginTop: '8px' }}>
-              No meaningful dark patterns or consumer risks were
-              identified.
+      {/* ACCOUNT TAB */}
+      {activeTab === 'account' && (
+        <div>
+          <h3
+            style={{
+              margin: '0 0 12px 0',
+              color: '#1a1a1a'
+            }}
+          >
+            My Account
+          </h3>
+
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#666'
+            }}
+          >
+            You are currently logged in to ClearContract.
+          </p>
+
+          <p
+            style={{
+              fontSize: '12px',
+              color: '#666'
+            }}
+          >
+            Your scan history is saved to your account.
+          </p>
+
+          <button
+            onClick={handleLogout}
+            disabled={isBusy}
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              padding: '10px',
+              backgroundColor: isBusy ? '#9ca3af' : '#ef4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: isBusy ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Log Out
+          </button>
+
+          {error && (
+            <p style={{ color: '#dc2626', fontSize: '12px' }}>
+              {error}
             </p>
           )}
         </div>
