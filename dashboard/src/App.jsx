@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiRequest } from './api.js';
 import './App.css';
 
 const iconContent = {
@@ -734,9 +735,189 @@ function ScansPage({ searchQuery }) {
   );
 }
 
+
+const ADMIN_TOKEN_KEY = 'clearcontract_admin_token';
+
+function LoginScreen({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  onSubmit,
+  error,
+  submitting
+}) {
+  return (
+    <div className="auth-shell">
+      <form className="auth-card" onSubmit={onSubmit}>
+        <span className="auth-brand-mark">
+          <Icon name="shield" size={25} />
+        </span>
+
+        <p className="auth-kicker">CLEARCONTRACT · ADMIN CONSOLE</p>
+        <h1>Administrator sign in</h1>
+        <p className="auth-description">
+          Sign in with your ClearContract account to access the
+          protected administrator dashboard.
+        </p>
+
+        {error && (
+          <div className="auth-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <label className="auth-field">
+          Email address
+          <input
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="admin@example.com"
+            required
+          />
+        </label>
+
+        <label className="auth-field">
+          Password
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+        </label>
+
+        <button
+          className="auth-submit-button"
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting ? 'Signing in...' : 'Sign in securely'}
+        </button>
+
+        <p className="auth-security-note">
+          Administrator access is verified by the backend.
+          A regular user account cannot access this console.
+        </p>
+      </form>
+    </div>
+  );
+}
+
+
 function App() {
   const [activePage, setActivePage] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [token, setToken] = useState(
+    () => sessionStorage.getItem(ADMIN_TOKEN_KEY)
+  );
+  const [admin, setAdmin] = useState(null);
+  const [authLoading, setAuthLoading] = useState(
+    () => Boolean(sessionStorage.getItem(ADMIN_TOKEN_KEY))
+  );
+  const [authError, setAuthError] = useState('');
+
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
+
+  // Verify the JWT and administrator role using the protected backend.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!token) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    apiRequest('/api/admin/me', { token })
+      .then((result) => {
+        if (cancelled) return;
+
+        if (!result?.admin) {
+          throw new Error('The API did not return an administrator account.');
+        }
+
+        setAdmin(result.admin);
+        setAuthError('');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+        setAdmin(null);
+        setToken(null);
+
+        if (error.status === 403) {
+          setAuthError(
+            'This account does not have administrator privileges.'
+          );
+        } else if (error.status === 401) {
+          setAuthError(
+            'Your session is invalid or expired. Please sign in again.'
+          );
+        } else {
+          setAuthError(
+            `Could not verify administrator access. ${error.message}`
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Login first, then let /api/admin/me verify the account's role.
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    setAuthError('');
+    setLoginSubmitting(true);
+
+    try {
+      const result = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: {
+          email: loginEmail.trim(),
+          password: loginPassword
+        }
+      });
+
+      if (!result.token) {
+        throw new Error('The login response did not contain a token.');
+      }
+
+      sessionStorage.setItem(ADMIN_TOKEN_KEY, result.token);
+      setLoginPassword('');
+      setAuthLoading(true);
+      setToken(result.token);
+    } catch (error) {
+      setAuthError(error.message || 'Unable to sign in.');
+    } finally {
+      setLoginSubmitting(false);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    setToken(null);
+    setAdmin(null);
+    setAuthError('');
+    setLoginPassword('');
+    setSearchQuery('');
+    setActivePage('overview');
+  };
 
   const page = pageDetails[activePage] || pageDetails.overview;
 
@@ -744,6 +925,36 @@ function App() {
     setActivePage(pageId);
     setSearchQuery('');
   };
+
+  if (authLoading) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card auth-loading-card" role="status">
+          <span className="auth-brand-mark">
+            <Icon name="shield" size={25} />
+          </span>
+          <h1>Verifying access</h1>
+          <p className="auth-description">
+            Checking your administrator session...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return (
+      <LoginScreen
+        email={loginEmail}
+        setEmail={setLoginEmail}
+        password={loginPassword}
+        setPassword={setLoginPassword}
+        onSubmit={handleLogin}
+        error={authError}
+        submitting={loginSubmitting}
+      />
+    );
+  }
 
   return (
     <div className="dashboard-shell">
@@ -797,7 +1008,7 @@ function App() {
         <div className="sidebar-account">
           <Avatar initials="AD" />
           <div className="account-copy">
-            <strong>Administrator</strong>
+            <strong>{admin.email || 'Administrator'}</strong>
             <span>Admin workspace</span>
           </div>
           <Icon name="chevron" size={16} />
@@ -827,6 +1038,14 @@ function App() {
             </button>
             <span className="topbar-divider" />
             <Avatar initials="AD" size="small" />
+
+            <button
+              className="button button-secondary auth-logout-button"
+              type="button"
+              onClick={handleLogout}
+            >
+              Sign out
+            </button>
           </div>
         </header>
 
