@@ -12,7 +12,7 @@ import {
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Navigation from './components/Navigation.jsx';
-
+import HistoryList from './components/HistoryList.jsx';
 const MAX_CONTRACT_CHARS = 200000;
 
 function App() {
@@ -548,122 +548,40 @@ function App() {
         </div>
       )}
 
-      {/* HISTORY TAB */}
-      {activeTab === 'history' && (
-        <div>
-          <h3
-            style={{
-              margin: '0 0 12px 0',
-              color: '#1a1a1a'
-            }}
-          >
-            Scan History
-          </h3>
+      
+{/* HISTORY TAB */}
+{activeTab === 'history' && (
+  <div>
+    <h3
+      style={{
+        margin: '0 0 12px 0',
+        color: '#1a1a1a'
+      }}
+    >
+      Scan History
+    </h3>
 
-          {isLoadingHistory ? (
-            <p
-              style={{
-                fontSize: '13px',
-                color: '#666'
-              }}
-            >
-              Loading your scan history...
-            </p>
-          ) : error ? (
-            <p
-              style={{
-                fontSize: '12px',
-                color: '#dc2626'
-              }}
-            >
-              {error}
-            </p>
-          ) : scanHistory.length === 0 ? (
-            <p
-              style={{
-                fontSize: '13px',
-                color: '#666'
-              }}
-            >
-              No scans found yet.
-            </p>
-          ) : (
-            <div
-              style={{
-                maxHeight: '400px',
-                overflowY: 'auto'
-              }}
-            >
-              {scanHistory.map((scan) => (
-                <div
-                  key={scan._id}
-                  style={{
-                    marginBottom: '12px',
-                    padding: '12px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    textAlign: 'left'
-                  }}
-                >
-                  <strong>
-                    {scan.sourceUrl || 'Manual contract scan'}
-                  </strong>
+    {isLoadingHistory ? (
+      <p style={{ fontSize: '13px', color: '#666' }}>
+        Loading your scan history...
+      </p>
+    ) : error ? (
+      <p style={{ fontSize: '12px', color: '#dc2626' }}>
+        {error}
+      </p>
+    ) : (
+      <div
+        style={{
+          maxHeight: '400px',
+          overflowY: 'auto'
+        }}
+      >
+        <HistoryList scans={scanHistory} />
+      </div>
+    )}
+  </div>
+)}
 
-                  <p
-                    style={{
-                      margin: '6px 0',
-                      color: '#666'
-                    }}
-                  >
-                    {new Date(scan.scannedAt).toLocaleString()}
-                  </p>
-
-                  <p style={{ margin: '6px 0' }}>
-                    {scan.aiSummary}
-                  </p>
-
-                  {scan.darkPatternsFound?.length > 0 && (
-                    <div style={{ marginTop: '8px' }}>
-                      <strong>
-                        Potential Risks: {scan.darkPatternsFound.length}
-                      </strong>
-
-                      {scan.darkPatternsFound.map(
-                        (pattern, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              marginTop: '8px',
-                              padding: '8px',
-                              backgroundColor: '#fff',
-                              borderRadius: '4px'
-                            }}
-                          >
-                            <strong>{pattern.category}</strong>
-                            <p>{pattern.explanation}</p>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-
-                  {scan.darkPatternsFound?.length === 0 && (
-                    <p
-                      style={{
-                        color: '#166534',
-                        marginTop: '8px'
-                      }}
-                    >
-                      No meaningful risks identified.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ACCOUNT TAB */}
       {activeTab === 'account' && (
