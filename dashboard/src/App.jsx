@@ -108,60 +108,6 @@ const navItems = [
   { id: 'scans', label: 'Scan activity', icon: 'scans' }
 ];
 
-// Placeholder records for the UI preview. These are not live database data.
-const demoUsers = [
-  {
-    id: 'u1',
-    initials: 'AR',
-    name: 'Aarav Rao',
-    email: 'aarav.rao@example.com',
-    role: 'Admin',
-    joined: 'Oct 12, 2026',
-    scans: 126,
-    status: 'Active'
-  },
-  {
-    id: 'u2',
-    initials: 'MS',
-    name: 'Mira Shah',
-    email: 'mira.shah@example.com',
-    role: 'User',
-    joined: 'Oct 10, 2026',
-    scans: 48,
-    status: 'Active'
-  },
-  {
-    id: 'u3',
-    initials: 'DK',
-    name: 'Dev Kapoor',
-    email: 'dev.kapoor@example.com',
-    role: 'User',
-    joined: 'Oct 08, 2026',
-    scans: 31,
-    status: 'Active'
-  },
-  {
-    id: 'u4',
-    initials: 'PS',
-    name: 'Priya Singh',
-    email: 'priya.singh@example.com',
-    role: 'User',
-    joined: 'Oct 06, 2026',
-    scans: 17,
-    status: 'Active'
-  },
-  {
-    id: 'u5',
-    initials: 'RN',
-    name: 'Rohan Nair',
-    email: 'rohan.nair@example.com',
-    role: 'User',
-    joined: 'Oct 04, 2026',
-    scans: 9,
-    status: 'Active'
-  }
-];
-
 const demoScans = [
   {
     id: 's1',
@@ -220,13 +166,6 @@ const demoScans = [
   }
 ];
 
-const riskCategories = [
-  { label: 'Automatic renewal', count: 86, percentage: 86 },
-  { label: 'Hidden fees', count: 64, percentage: 64 },
-  { label: 'Cancellation barriers', count: 52, percentage: 52 },
-  { label: 'Privacy concerns', count: 38, percentage: 38 },
-  { label: 'Forced continuity', count: 24, percentage: 24 }
-];
 
 const pageDetails = {
   overview: {
@@ -272,7 +211,7 @@ function RiskPill({ risk }) {
   );
 }
 
-function OverviewPage({ searchQuery, onNavigate }) {
+function OverviewPage({ searchQuery, onNavigate, dashboardStats, statsError }) {
   const recentScans = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -288,20 +227,45 @@ function OverviewPage({ searchQuery, onNavigate }) {
     );
   }, [searchQuery]);
 
+  const stats = dashboardStats?.stats;
+  const categories = dashboardStats?.commonRiskCategories ?? [];
+  const topRisk = categories[0];
+  const maxCategoryCount = Math.max(
+    1,
+    ...categories.map((category) =>
+      Number.isFinite(category.count) ? category.count : 0
+    )
+  );
+
+  const formatCount = (value) =>
+    Number.isFinite(value) ? value.toLocaleString() : '—';
+
+  const displayStat = (value) => {
+    if (statsError) return 'Unavailable';
+    if (!stats) return 'Loading...';
+    return formatCount(value);
+  };
+
   return (
     <>
+      {statsError && (
+        <div className="auth-error" role="alert">
+          Could not load live statistics: {statsError}
+        </div>
+      )}
+
       <div className="stats-grid">
         <article className="stat-card">
           <div className="stat-topline">
             <span className="stat-icon stat-icon-blue">
               <Icon name="users" size={20} />
             </span>
-            <span className="trend trend-up">+12.8%</span>
+            <span className="stat-neutral">All accounts</span>
           </div>
           <p className="stat-label">Total users</p>
           <div className="stat-bottom">
-            <strong>1,284</strong>
-            <span>vs. last month</span>
+            <strong>{displayStat(stats?.totalUsers)}</strong>
+            <span>Registered accounts</span>
           </div>
         </article>
 
@@ -310,12 +274,12 @@ function OverviewPage({ searchQuery, onNavigate }) {
             <span className="stat-icon stat-icon-purple">
               <Icon name="scans" size={20} />
             </span>
-            <span className="trend trend-up">+8.4%</span>
+            <span className="stat-neutral">All time</span>
           </div>
           <p className="stat-label">Total scans</p>
           <div className="stat-bottom">
-            <strong>8,492</strong>
-            <span>vs. last month</span>
+            <strong>{displayStat(stats?.totalScans)}</strong>
+            <span>Recorded analyses</span>
           </div>
         </article>
 
@@ -324,12 +288,12 @@ function OverviewPage({ searchQuery, onNavigate }) {
             <span className="stat-icon stat-icon-green">
               <Icon name="activity" size={20} />
             </span>
-            <span className="trend trend-up">+5.2%</span>
+            <span className="stat-neutral">Last 7 days</span>
           </div>
           <p className="stat-label">Scans this week</p>
           <div className="stat-bottom">
-            <strong>684</strong>
-            <span>vs. last week</span>
+            <strong>{displayStat(stats?.scansLast7Days)}</strong>
+            <span>Recent analyses</span>
           </div>
         </article>
 
@@ -342,7 +306,15 @@ function OverviewPage({ searchQuery, onNavigate }) {
           </div>
           <p className="stat-label">Most detected risk</p>
           <div className="stat-bottom">
-            <strong className="stat-text-value">Auto-renewal</strong>
+            <strong className="stat-text-value">
+              {topRisk?.category ?? (
+                statsError
+                  ? 'Unavailable'
+                  : dashboardStats
+                    ? 'No findings yet'
+                    : 'Loading...'
+              )}
+            </strong>
           </div>
         </article>
       </div>
@@ -360,34 +332,50 @@ function OverviewPage({ searchQuery, onNavigate }) {
             }
           />
 
-          <div className="risk-chart">
-            {riskCategories.map((category, index) => (
-              <div className="risk-chart-row" key={category.label}>
-                <div className="risk-chart-label">
-                  <span className={`category-index index-${index + 1}`}>
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span>{category.label}</span>
-                  <strong>{category.count}</strong>
-                </div>
-                <div
-                  className="bar-track"
-                  role="img"
-                  aria-label={`${category.label}: ${category.count} detections`}
-                >
+          {categories.length > 0 ? (
+            <div className="risk-chart">
+              {categories.map((category, index) => (
+                <div className="risk-chart-row" key={category.category}>
+                  <div className="risk-chart-label">
+                    <span className={`category-index index-${index + 1}`}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span>{category.category}</span>
+                    <strong>{formatCount(category.count)}</strong>
+                  </div>
                   <div
-                    className={`bar-fill bar-fill-${index + 1}`}
-                    style={{ width: `${category.percentage}%` }}
-                  />
+                    className="bar-track"
+                    role="img"
+                    aria-label={`${category.category}: ${category.count} detections`}
+                  >
+                    <div
+                      className={`bar-fill bar-fill-${index + 1}`}
+                      style={{
+                        width: `${Math.round(
+                          ((Number.isFinite(category.count) ? category.count : 0) /
+                            maxCategoryCount) *
+                          100
+                        )}%`
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              {statsError
+                ? 'Risk categories could not be loaded.'
+                : dashboardStats
+                  ? 'No risk categories recorded yet.'
+                  : 'Loading risk categories...'}
+            </div>
+          )}
 
           <div className="chart-footnote">
             <span className="legend-dot" />
             Detected risk instances
-            <span className="chart-footnote-note">Sample data</span>
+            <span className="chart-footnote-note">Live database data</span>
           </div>
         </section>
 
@@ -399,19 +387,29 @@ function OverviewPage({ searchQuery, onNavigate }) {
             <span className="insight-kicker">ADMIN INSIGHT</span>
           </div>
 
-          <h2>Watch for recurring renewal patterns.</h2>
+          <h2>
+            {topRisk
+              ? `Watch for recurring ${topRisk.category.toLowerCase()} patterns.`
+              : 'Monitor detected risk patterns.'}
+          </h2>
           <p>
-            Automatic renewal is the leading category in this preview.
-            These findings can help prioritize product improvements and
-            future analysis quality checks.
+            {topRisk
+              ? `${topRisk.category} is currently the most frequently detected category in recorded scans. These findings can help prioritize product improvements and future analysis quality checks.`
+              : statsError
+                ? 'Risk insights are unavailable because the dashboard could not load the statistics.'
+                : dashboardStats
+                  ? 'Risk insights will appear when scan results include detected categories.'
+                  : 'Risk insights will appear after the statistics load.'}
           </p>
 
           <div className="insight-metric">
             <div>
               <span>Leading category</span>
-              <strong>Automatic renewal</strong>
+              <strong>{topRisk?.category ?? 'No findings yet'}</strong>
             </div>
-            <strong className="insight-count">86</strong>
+            <strong className="insight-count">
+              {topRisk ? formatCount(topRisk.count) : dashboardStats ? '0' : '—'}
+            </strong>
           </div>
 
           <button
@@ -434,7 +432,7 @@ function OverviewPage({ searchQuery, onNavigate }) {
       <section className="panel activity-panel">
         <SectionHeading
           title="Recent scan activity"
-          subtitle="A quick look at recent contract analyses"
+          subtitle="Preview of recent contract analyses"
           action={
             <button
               className="button button-secondary"
@@ -498,44 +496,91 @@ function OverviewPage({ searchQuery, onNavigate }) {
             </tbody>
           </table>
         </div>
+        <div className="table-footer">
+          <span>Recent scan preview</span>
+          <span>Sample records, not live scan data</span>
+        </div>
       </section>
     </>
   );
 }
 
-function UsersPage({ searchQuery }) {
-  const filteredUsers = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+function UsersPage({
+  users,
+  loading,
+  error,
+  pagination,
+  onPageChange
+}) {
+  const totalUsers = pagination?.total ?? 0;
+  const currentPage = pagination?.page ?? 1;
+  const pageSize = pagination?.limit ?? 20;
+  const totalPages = pagination?.totalPages ?? 0;
 
-    if (!query) return demoUsers;
+  const scansOnPage = users.reduce(
+    (total, user) => total + (Number(user.scanCount) || 0),
+    0
+  );
 
-    return demoUsers.filter((user) =>
-      [user.name, user.email, user.role, user.status].some((value) =>
-        value.toLowerCase().includes(query)
-      )
-    );
-  }, [searchQuery]);
+  const formatDate = (value) => {
+    if (!value) return 'Unknown';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return 'Unknown';
+    }
+
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit'
+    });
+  };
+
+  const start =
+    totalUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+
+  const end = Math.min(
+    (currentPage - 1) * pageSize + users.length,
+    totalUsers
+  );
 
   return (
     <>
+      {error && (
+        <div className="auth-error" role="alert">
+          Could not load real users: {error}
+        </div>
+      )}
+
       <div className="page-summary-row">
         <div className="summary-stat">
           <span className="summary-stat-icon">
             <Icon name="users" size={19} />
           </span>
+
           <div>
-            <span>Users in this preview</span>
-            <strong>{filteredUsers.length}</strong>
+            <span>Total registered users</span>
+            <strong>
+              {loading ? 'Loading...' : error ? 'Unavailable' : totalUsers.toLocaleString()}
+            </strong>
           </div>
         </div>
+
         <div className="summary-stat">
           <span className="summary-stat-icon summary-stat-green">
             <Icon name="activity" size={19} />
           </span>
+
           <div>
-            <span>Scans by listed users</span>
+            <span>Scans by displayed users</span>
             <strong>
-              {filteredUsers.reduce((total, user) => total + user.scans, 0)}
+              {loading
+                ? 'Loading...'
+                : error
+                  ? 'Unavailable'
+                  : scansOnPage.toLocaleString()}
             </strong>
           </div>
         </div>
@@ -544,11 +589,11 @@ function UsersPage({ searchQuery }) {
       <section className="panel activity-panel">
         <SectionHeading
           title="Registered users"
-          subtitle="Account directory and scan usage"
+          subtitle="Real accounts from the ClearContract database"
           action={
             <span className="preview-label">
               <span className="preview-dot" />
-              Sample records
+              Live records
             </span>
           }
         />
@@ -557,62 +602,128 @@ function UsersPage({ searchQuery }) {
           <table>
             <thead>
               <tr>
-                <th>User</th>
+                <th>User account</th>
                 <th>Role</th>
                 <th>Joined</th>
                 <th>Scan count</th>
-                <th>Status</th>
               </tr>
             </thead>
+
             <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="user-cell">
-                      <Avatar initials={user.initials} />
-                      <span className="user-copy">
-                        <strong>{user.name}</strong>
-                        <span>{user.email}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={`role-pill ${
-                        user.role === 'Admin' ? 'role-admin' : 'role-user'
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="date-cell">{user.joined}</td>
-                  <td>
-                    <strong className="table-number">{user.scans}</strong>
-                  </td>
-                  <td>
-                    <span className="status-pill">
-                      <span className="status-dot" />
-                      {user.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {filteredUsers.length === 0 && (
+              {loading ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={4}>
                     <div className="empty-state">
-                      No sample users match your search.
+                      Loading registered users...
                     </div>
                   </td>
                 </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="empty-state">
+                      User records could not be loaded. Check the API error above.
+                    </div>
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="empty-state">
+                      No registered users found.
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => {
+                  const email =
+                    typeof user.email === 'string'
+                      ? user.email
+                      : 'Unknown email';
+
+                  const username = email.split('@')[0];
+
+                  const initials =
+                    username.slice(0, 2).toUpperCase() || 'U';
+
+                  const isAdmin = user.role === 'admin';
+
+                  return (
+                    <tr key={user.id}>
+                      <td>
+                        <div className="user-cell">
+                          <Avatar initials={initials} />
+
+                          <span className="user-copy">
+                            <strong>{email}</strong>
+                            <span>
+                              ID: {String(user.id).slice(-8)}
+                            </span>
+                          </span>
+                        </div>
+                      </td>
+
+                      <td>
+                        <span
+                          className={`role-pill ${
+                            isAdmin ? 'role-admin' : 'role-user'
+                          }`}
+                        >
+                          {isAdmin ? 'Admin' : 'User'}
+                        </span>
+                      </td>
+
+                      <td className="date-cell">
+                        {formatDate(user.createdAt)}
+                      </td>
+
+                      <td>
+                        <strong className="table-number">
+                          {(Number(user.scanCount) || 0).toLocaleString()}
+                        </strong>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
         <div className="table-footer">
-          <span>Showing {filteredUsers.length} sample users</span>
-          <span>Live user data will be connected next</span>
+          <span>
+            {loading
+              ? 'Loading records...'
+              : error
+                ? 'Records unavailable'
+                : totalUsers === 0
+                  ? 'No registered users'
+                  : `Showing ${start}–${end} of ${totalUsers} registered users`}
+          </span>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={loading || currentPage <= 1}
+              onClick={() => onPageChange(currentPage - 1)}
+            >
+              Previous
+            </button>
+
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={
+                loading ||
+                totalPages === 0 ||
+                currentPage >= totalPages
+              }
+              onClick={() => onPageChange(currentPage + 1)}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </section>
     </>
@@ -807,7 +918,6 @@ function LoginScreen({
   );
 }
 
-
 function App() {
   const [activePage, setActivePage] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -820,6 +930,20 @@ function App() {
     () => Boolean(sessionStorage.getItem(ADMIN_TOKEN_KEY))
   );
   const [authError, setAuthError] = useState('');
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [statsError, setStatsError] = useState('');
+
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState('');
+  const [usersPage, setUsersPage] = useState(1);
+
+  const [usersPagination, setUsersPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0
+  });
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -878,11 +1002,111 @@ function App() {
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token || !admin) return;
+
+    let cancelled = false;
+
+    apiRequest('/api/admin/stats', { token })
+      .then((result) => {
+        if (cancelled) return;
+
+        if (!result?.stats) {
+          throw new Error('Invalid statistics response from the API.');
+        }
+
+        setDashboardStats(result);
+        setStatsError('');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        setStatsError(error.message || 'Failed to load statistics.');
+        setDashboardStats(null);
+
+        if (error.status === 401 || error.status === 403) {
+          sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+          setToken(null);
+          setAdmin(null);
+
+          setAuthError(
+            error.status === 403
+              ? 'Administrator access is required.'
+              : 'Your session has expired. Please sign in again.'
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, admin]);
+
+
+  useEffect(() => {
+    if (!token || !admin || activePage !== 'users') return;
+
+    let cancelled = false;
+
+    const params = new URLSearchParams({
+      page: String(usersPage),
+      limit: '20'
+    });
+
+    const query = searchQuery.trim().slice(0, 100);
+
+    if (query) {
+      params.set('q', query);
+    }
+
+    apiRequest(`/api/admin/users?${params.toString()}`, { token })
+      .then((result) => {
+        if (cancelled) return;
+
+        if (!Array.isArray(result?.users) || !result?.pagination) {
+          throw new Error('Invalid user-list response from the API.');
+        }
+
+        setAdminUsers(result.users);
+        setUsersPagination(result.pagination);
+        setUsersError('');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        setAdminUsers([]);
+        setUsersError(error.message || 'Failed to load registered users.');
+
+        if (error.status === 401 || error.status === 403) {
+          sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+          setToken(null);
+          setAdmin(null);
+
+          setAuthError(
+            error.status === 403
+              ? 'Administrator access is required.'
+              : 'Your session has expired. Please sign in again.'
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setUsersLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, admin, activePage, searchQuery, usersPage]);
+
   // Login first, then let /api/admin/me verify the account's role.
   const handleLogin = async (event) => {
     event.preventDefault();
 
     setAuthError('');
+    setStatsError('');
+    setDashboardStats(null);
     setLoginSubmitting(true);
 
     try {
@@ -914,6 +1138,8 @@ function App() {
     setToken(null);
     setAdmin(null);
     setAuthError('');
+    setStatsError('');
+    setDashboardStats(null);
     setLoginPassword('');
     setSearchQuery('');
     setActivePage('overview');
@@ -922,8 +1148,26 @@ function App() {
   const page = pageDetails[activePage] || pageDetails.overview;
 
   const navigateTo = (pageId) => {
+    const pageChanging = pageId !== activePage;
+
     setActivePage(pageId);
     setSearchQuery('');
+
+    if (pageId === 'users' && pageChanging) {
+      setUsersPage(1);
+      setUsersLoading(true);
+      setUsersError('');
+    }
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
+
+    if (activePage === 'users') {
+      setUsersPage(1);
+      setUsersLoading(true);
+      setUsersError('');
+    }
   };
 
   if (authLoading) {
@@ -1001,7 +1245,7 @@ function App() {
           </p>
           <span className="security-status">
             <span />
-            UI preview
+            Partially live
           </span>
         </div>
 
@@ -1025,7 +1269,7 @@ function App() {
           <div className="topbar-actions">
             <span className="preview-badge">
               <span />
-              UI PREVIEW
+              PARTIALLY LIVE
             </span>
             <button
               className="icon-button notification-button"
@@ -1065,7 +1309,8 @@ function App() {
                 <Icon name="search" size={18} />
                 <input
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
+                  maxLength={activePage === 'users' ? 100 : undefined}
                   placeholder={
                     activePage === 'users'
                       ? 'Search users...'
@@ -1094,22 +1339,35 @@ function App() {
               <Icon name="activity" size={18} />
             </span>
             <p>
-              <strong>Preview mode.</strong> The numbers and records shown here
-              are sample data. The next checkpoint will connect this interface
-              to the live, protected admin APIs.
+              <strong>Partially connected.</strong> Overview statistics and risk
+              categories use live database data. The user directory also uses live
+              database data. Recent scan activity and the Scan Activity table still
+              use sample records.
             </p>
-            <span className="demo-banner-tag">NOT LIVE DATA</span>
+            <span className="demo-banner-tag">PARTIALLY LIVE</span>
           </div>
 
           {activePage === 'overview' && (
             <OverviewPage
               searchQuery={searchQuery}
               onNavigate={navigateTo}
+              dashboardStats={dashboardStats}
+              statsError={statsError}
             />
           )}
 
           {activePage === 'users' && (
-            <UsersPage searchQuery={searchQuery} />
+            <UsersPage
+              users={adminUsers}
+              loading={usersLoading}
+              error={usersError}
+              pagination={usersPagination}
+              onPageChange={(nextPage) => {
+                setUsersPage(nextPage);
+                setUsersLoading(true);
+                setUsersError('');
+              }}
+            />
           )}
 
           {activePage === 'scans' && (
