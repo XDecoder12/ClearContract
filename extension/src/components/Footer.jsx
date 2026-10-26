@@ -1,3 +1,4 @@
+
 const Footer = () => {
   return (
     <footer className="app-footer">
@@ -9,7 +10,7 @@ const Footer = () => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by Gemini API
+          Powered by Google Gemini API
         </a>
       </div>
 

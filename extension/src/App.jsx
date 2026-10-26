@@ -1,6 +1,7 @@
+
+import Footer from "./components/Footer";
 import { useEffect, useState } from 'react';
 import './App.css';
-import Footer from './components/Footer';
 
 import {
   login,
@@ -13,7 +14,6 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Navigation from './components/Navigation.jsx';
 import HistoryList from './components/HistoryList.jsx';
-
 const MAX_CONTRACT_CHARS = 200000;
 
 function App() {
@@ -43,8 +43,10 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Saved scans and navigation
+  // Saved scans
   const [scanHistory, setScanHistory] = useState([]);
+
+  // Popup navigation
   const [activeTab, setActiveTab] = useState('scanner');
 
   const isBusy =
@@ -101,7 +103,9 @@ function App() {
 
   // Handle user logout
   const handleLogout = async () => {
-    if (isBusy) return;
+    if (isBusy) {
+      return;
+    }
 
     try {
       await logout();
@@ -112,10 +116,12 @@ function App() {
 
       setEmail('');
       setPassword('');
+
       setScanHistory([]);
       setContractText('');
       setSourceUrl('');
       setAnalysis(null);
+
       setError('');
       setAuthMessage('');
     } catch (err) {
@@ -126,7 +132,9 @@ function App() {
 
   // Fetch previously saved scans
   const handleShowHistory = async () => {
-    if (isLoadingHistory) return;
+    if (isLoadingHistory) {
+      return;
+    }
 
     setError('');
     setActiveTab('history');
@@ -183,11 +191,10 @@ function App() {
         throw new Error('Could not determine the current webpage.');
       }
 
-      const injectionResult =
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => document.body?.innerText || ''
-        });
+      const injectionResult = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => document.body?.innerText || ''
+      });
 
       const scrapedText = injectionResult?.[0]?.result;
 
@@ -198,6 +205,7 @@ function App() {
         setContractText('');
         setSourceUrl('');
         setAnalysis(null);
+
         setError('No readable text was found on this webpage.');
         return;
       }
@@ -232,7 +240,9 @@ function App() {
 
   // Analyze contract through the backend Gemini API
   const handleAnalyze = async () => {
-    if (isScraping || isAnalyzing) return;
+    if (isScraping || isAnalyzing) {
+      return;
+    }
 
     if (!contractText.trim()) {
       setError('Please enter or paste contract text first.');
@@ -282,9 +292,7 @@ function App() {
         setSourceUrl('');
         setAnalysis(null);
 
-        setError(
-          'Your session has expired. Please log in again.'
-        );
+        setError('Your session has expired. Please log in again.');
         return;
       }
 
@@ -307,7 +315,13 @@ function App() {
   // Show loading screen while checking authentication
   if (checkingAuth) {
     return (
-      <div className="app-container">
+      <div
+        style={{
+          width: '380px',
+          padding: '16px',
+          fontFamily: 'sans-serif'
+        }}
+      >
         <p>Checking authentication...</p>
         <Footer />
       </div>
@@ -316,49 +330,65 @@ function App() {
 
   // Show Login or Register for unauthenticated users
   if (!isAuthenticated) {
-    return (
-      <div className="app-container">
-        {authScreen === 'register' ? (
-          <Register
-            onRegistered={() => {
-              setAuthMessage(
-                'Registration successful! Please log in.'
-              );
-              setError('');
-              setAuthScreen('login');
-            }}
-            onBackToLogin={() => {
-              setError('');
-              setAuthScreen('login');
-            }}
-          />
-        ) : (
-          <Login
-            email={email}
-            password={password}
-            setEmail={setEmail}
-            setPassword={setPassword}
-            handleLogin={handleLogin}
-            isLoggingIn={isLoggingIn}
-            error={error}
-            authMessage={authMessage}
-            onShowRegister={() => {
-              setAuthMessage('');
-              setError('');
-              setAuthScreen('register');
-            }}
-          />
-        )}
-
+    if (authScreen === 'register') {
+      return (
+        <>
+        <Register
+          onRegistered={() => {
+            setAuthMessage('Registration successful! Please log in.');
+            setError('');
+            setAuthScreen('login');
+          }}
+          onBackToLogin={() => {
+            setError('');
+            setAuthScreen('login');
+          }}
+        />
         <Footer />
-      </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+      <Login
+        email={email}
+        password={password}
+        setEmail={setEmail}
+        setPassword={setPassword}
+        handleLogin={handleLogin}
+        isLoggingIn={isLoggingIn}
+        error={error}
+        authMessage={authMessage}
+        onShowRegister={() => {
+          setAuthMessage('');
+          setError('');
+          setAuthScreen('register');
+        }}
+      />
+      <Footer />
+      </>
     );
   }
 
   // Main authenticated extension interface
   return (
-    <div className="app-container">
-      <h2 className="app-title">ClearContract AI</h2>
+    <div
+      style={{
+        width: '380px',
+        padding: '16px',
+        fontFamily: 'sans-serif',
+        boxSizing: 'border-box'
+      }}
+    >
+      <h2
+        style={{
+          margin: '0 0 12px 0',
+          color: '#1a1a1a'
+        }}
+      >
+        ClearContract AI
+      </h2>
 
       {/* Three-tab navigation */}
       <Navigation
@@ -366,10 +396,16 @@ function App() {
         setActiveTab={handleTabChange}
       />
 
-      {/* Scanner tab */}
+      {/* SCANNER TAB */}
       {activeTab === 'scanner' && (
         <div>
-          <p className="app-description">
+          <p
+            style={{
+              margin: '0 0 16px 0',
+              fontSize: '13px',
+              color: '#666'
+            }}
+          >
             Paste any terms or contract clauses below to scan
             for hidden risks.
           </p>
@@ -377,7 +413,17 @@ function App() {
           <button
             onClick={handleScrapePage}
             disabled={isScraping || isAnalyzing}
-            className="app-button scrape-button"
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginBottom: '12px',
+              backgroundColor: isScraping ? '#9ca3af' : '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: isScraping ? 'not-allowed' : 'pointer'
+            }}
           >
             {isScraping
               ? 'Reading Webpage...'
@@ -389,15 +435,35 @@ function App() {
             maxLength={MAX_CONTRACT_CHARS}
             placeholder="Paste legal text here..."
             value={contractText}
-            onChange={(event) => {
-              setContractText(event.target.value);
+            onChange={(e) => {
+              setContractText(e.target.value);
               setSourceUrl('');
               setAnalysis(null);
             }}
-            className="contract-textarea"
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '8px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              fontSize: '13px',
+              fontFamily: 'inherit',
+              resize: 'vertical'
+            }}
           />
 
-          <div className="character-count">
+          <div
+            style={{
+              marginTop: '6px',
+              marginBottom: '12px',
+              fontSize: '11px',
+              color:
+                contractText.length >= MAX_CONTRACT_CHARS
+                  ? '#dc2626'
+                  : '#666',
+              textAlign: 'right'
+            }}
+          >
             {contractText.length.toLocaleString()} /{' '}
             {MAX_CONTRACT_CHARS.toLocaleString()} characters
           </div>
@@ -405,7 +471,20 @@ function App() {
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing || isScraping}
-            className="app-button analyze-button"
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginTop: '12px',
+              backgroundColor: isAnalyzing ? '#888' : '#2563eb',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor:
+                isAnalyzing || isScraping
+                  ? 'not-allowed'
+                  : 'pointer'
+            }}
           >
             {isAnalyzing
               ? 'Analyzing with Gemini...'
@@ -413,36 +492,83 @@ function App() {
           </button>
 
           {error && (
-            <p className="error-message">{error}</p>
+            <p
+              style={{
+                color: '#dc2626',
+                fontSize: '12px',
+                marginTop: '12px'
+              }}
+            >
+              {error}
+            </p>
           )}
 
           {/* Gemini analysis results */}
           {analysis && (
             <div className="analysis-output">
-              <strong>Analysis Results:</strong>
-
-              <div>
-                <strong>Summary</strong>
-                <p>{analysis.aiSummary}</p>
+              <div className="analysis-header">
+                <strong>Analysis Results</strong>
+                <span
+                  className={`risk-badge risk-badge--${String(
+                    analysis.overallRiskLevel || "MEDIUM"
+                  ).toLowerCase()}`}
+                >
+                  Overall Risk: {analysis.overallRiskLevel || "MEDIUM"}
+                </span>
               </div>
 
-              {analysis.darkPatternsFound?.length > 0 ? (
-                <div>
-                  <strong>Potential Risks</strong>
+              <div className="analysis-summary">
+                <strong>Summary</strong>
+                <p>
+                  {analysis.aiSummary || analysis.summary ||
+                    "No summary was provided by the analysis service."}
+                </p>
+              </div>
 
-                  {analysis.darkPatternsFound.map(
-                    (pattern, index) => (
-                      <div key={index} className="risk-item">
-                        <strong>{pattern.category}</strong>
-                        <p>{pattern.explanation}</p>
-                      </div>
+              {Array.isArray(analysis.darkPatternsFound) &&
+              analysis.darkPatternsFound.length > 0 ? (
+                <div className="potential-risks">
+                  <strong>Potential Risks</strong>
+                  {analysis.darkPatternsFound.map((pattern, index) => {
+                    const severity = ["LOW", "MEDIUM", "HIGH"].includes(
+                      String(pattern.severity || "").toUpperCase()
                     )
-                  )}
+                      ? String(pattern.severity).toUpperCase()
+                      : "MEDIUM";
+                    const badgeClass = severity === "HIGH"
+                      ? "risk-badge--high"
+                      : severity === "LOW"
+                        ? "risk-badge--low"
+                        : "risk-badge--warning";
+
+                    return (
+                      <div
+                        className="risk-item"
+                        key={`${pattern.category || "risk"}-${index}`}
+                      >
+                        <div className="risk-item-header">
+                          <strong>{pattern.category || "Potential Risk"}</strong>
+                          <span className={`risk-badge ${badgeClass}`}>
+                            {severity} RISK
+                          </span>
+                        </div>
+                        <p>
+                          {pattern.explanation ||
+                            "No explanation was provided for this finding."}
+                        </p>
+                        {pattern.evidence && (
+                          <blockquote className="risk-evidence">
+                            <strong>Contract evidence</strong>
+                            <p>“{pattern.evidence}”</p>
+                          </blockquote>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <p>
-                  No meaningful dark patterns or consumer risks
-                  were identified.
+                <p className="no-risks">
+                  No meaningful dark patterns or consumer risks were identified.
                 </p>
               )}
             </div>
@@ -450,46 +576,96 @@ function App() {
         </div>
       )}
 
-      {/* History tab */}
-      {activeTab === 'history' && (
-        <div>
-          <h3>Scan History</h3>
+      
+{/* HISTORY TAB */}
+{activeTab === 'history' && (
+  <div>
+    <h3
+      style={{
+        margin: '0 0 12px 0',
+        color: '#1a1a1a'
+      }}
+    >
+      Scan History
+    </h3>
 
-          {isLoadingHistory ? (
-            <p>Loading your scan history...</p>
-          ) : error ? (
-            <p className="error-message">{error}</p>
-          ) : (
-            <div className="history-list">
-              <HistoryList scans={scanHistory} />
-            </div>
-          )}
-        </div>
-      )}
+    {isLoadingHistory ? (
+      <p style={{ fontSize: '13px', color: '#666' }}>
+        Loading your scan history...
+      </p>
+    ) : error ? (
+      <p style={{ fontSize: '12px', color: '#dc2626' }}>
+        {error}
+      </p>
+    ) : (
+      <div
+        style={{
+          maxHeight: '400px',
+          overflowY: 'auto'
+        }}
+      >
+        <HistoryList scans={scanHistory} />
+      </div>
+    )}
+  </div>
+)}
 
-      {/* Account tab */}
+
+      {/* ACCOUNT TAB */}
       {activeTab === 'account' && (
         <div>
-          <h3>My Account</h3>
+          <h3
+            style={{
+              margin: '0 0 12px 0',
+              color: '#1a1a1a'
+            }}
+          >
+            My Account
+          </h3>
 
-          <p>You are currently logged in to ClearContract.</p>
-          <p>Your scan history is saved to your account.</p>
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#666'
+            }}
+          >
+            You are currently logged in to ClearContract.
+          </p>
+
+          <p
+            style={{
+              fontSize: '12px',
+              color: '#666'
+            }}
+          >
+            Your scan history is saved to your account.
+          </p>
 
           <button
             onClick={handleLogout}
             disabled={isBusy}
-            className="app-button logout-button"
+            style={{
+              width: '100%',
+              marginTop: '12px',
+              padding: '10px',
+              backgroundColor: isBusy ? '#9ca3af' : '#ef4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: isBusy ? 'not-allowed' : 'pointer'
+            }}
           >
             Log Out
           </button>
 
           {error && (
-            <p className="error-message">{error}</p>
+            <p style={{ color: '#dc2626', fontSize: '12px' }}>
+              {error}
+            </p>
           )}
         </div>
       )}
-
-      {/* Footer from styling/ui-branding */}
       <Footer />
     </div>
   );
