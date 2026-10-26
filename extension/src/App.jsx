@@ -28,18 +28,22 @@ function App() {
   const [isScraping, setIsScraping] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Errors and authentication
+  // Error messages
   const [error, setError] = useState('');
+
+  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Login and registration
+  // Login and registration screens
   const [authScreen, setAuthScreen] = useState('login');
   const [authMessage, setAuthMessage] = useState('');
+
+  // Login form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // History and navigation
+  // Saved scans and navigation
   const [scanHistory, setScanHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('scanner');
 
@@ -49,7 +53,7 @@ function App() {
     isScraping ||
     isAnalyzing;
 
-  // Check saved authentication
+  // Check saved authentication when popup opens
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -67,7 +71,7 @@ function App() {
     checkAuth();
   }, []);
 
-  // Login
+  // Handle user login
   const handleLogin = async (event) => {
     event.preventDefault();
 
@@ -85,17 +89,17 @@ function App() {
     } catch (err) {
       console.error('Login error:', err);
 
-      setError(
-        err instanceof TypeError
-          ? 'Cannot connect to the server. Please try again.'
-          : err.message || 'Login failed.'
-      );
+      if (err instanceof TypeError) {
+        setError('Cannot connect to the server. Please try again.');
+      } else {
+        setError(err.message || 'Login failed.');
+      }
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  // Logout
+  // Handle user logout
   const handleLogout = async () => {
     if (isBusy) return;
 
@@ -120,7 +124,7 @@ function App() {
     }
   };
 
-  // Load scan history
+  // Fetch previously saved scans
   const handleShowHistory = async () => {
     if (isLoadingHistory) return;
 
@@ -141,6 +145,7 @@ function App() {
         setIsAuthenticated(false);
         setAuthScreen('login');
         setActiveTab('scanner');
+
         setScanHistory([]);
         setContractText('');
         setSourceUrl('');
@@ -153,7 +158,7 @@ function App() {
     }
   };
 
-  // Navigation tabs
+  // Switch between Scanner, History and Account
   const handleTabChange = (tab) => {
     if (tab === 'history') {
       handleShowHistory();
@@ -163,7 +168,7 @@ function App() {
     }
   };
 
-  // Read text from current webpage
+  // Read text from the current webpage
   const handleScrapePage = async () => {
     setError('');
     setIsScraping(true);
@@ -225,7 +230,7 @@ function App() {
     }
   };
 
-  // Analyze contract using backend
+  // Analyze contract through the backend Gemini API
   const handleAnalyze = async () => {
     if (isScraping || isAnalyzing) return;
 
@@ -271,11 +276,15 @@ function App() {
         setIsAuthenticated(false);
         setAuthScreen('login');
         setActiveTab('scanner');
+
         setScanHistory([]);
         setContractText('');
         setSourceUrl('');
         setAnalysis(null);
-        setError('Your session has expired. Please log in again.');
+
+        setError(
+          'Your session has expired. Please log in again.'
+        );
         return;
       }
 
@@ -295,7 +304,7 @@ function App() {
     }
   };
 
-  // Loading screen
+  // Show loading screen while checking authentication
   if (checkingAuth) {
     return (
       <div className="app-container">
@@ -305,7 +314,7 @@ function App() {
     );
   }
 
-  // Login and registration
+  // Show Login or Register for unauthenticated users
   if (!isAuthenticated) {
     return (
       <div className="app-container">
@@ -346,11 +355,12 @@ function App() {
     );
   }
 
-  // Main authenticated interface
+  // Main authenticated extension interface
   return (
     <div className="app-container">
       <h2 className="app-title">ClearContract AI</h2>
 
+      {/* Three-tab navigation */}
       <Navigation
         activeTab={activeTab}
         setActiveTab={handleTabChange}
@@ -360,7 +370,8 @@ function App() {
       {activeTab === 'scanner' && (
         <div>
           <p className="app-description">
-            Paste contract terms below to scan for hidden risks.
+            Paste any terms or contract clauses below to scan
+            for hidden risks.
           </p>
 
           <button
@@ -401,11 +412,14 @@ function App() {
               : 'Analyze Contract'}
           </button>
 
-          {error && <p className="error-message">{error}</p>}
+          {error && (
+            <p className="error-message">{error}</p>
+          )}
 
+          {/* Gemini analysis results */}
           {analysis && (
             <div className="analysis-output">
-              <strong>Analysis Results</strong>
+              <strong>Analysis Results:</strong>
 
               <div>
                 <strong>Summary</strong>
@@ -469,7 +483,9 @@ function App() {
             Log Out
           </button>
 
-          {error && <p className="error-message">{error}</p>}
+          {error && (
+            <p className="error-message">{error}</p>
+          )}
         </div>
       )}
 
