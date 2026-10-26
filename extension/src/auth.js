@@ -1,3 +1,5 @@
+import { setToken, getToken, removeToken } from './utils/storage.js';
+
 const API_BASE_URL = 'http://localhost:5001';
 
 export const login = async (email, password) => {
@@ -15,8 +17,8 @@ export const login = async (email, password) => {
     throw new Error(data.error || 'Login failed.');
   }
 
+  await setToken(data.token);
   await chrome.storage.local.set({
-    authToken: data.token,
     userId: data.userId
   });
 
@@ -24,8 +26,7 @@ export const login = async (email, password) => {
 };
 
 export const getAuthToken = async () => {
-  const result = await chrome.storage.local.get('authToken');
-  return result.authToken || null;
+  return await getToken();
 };
 
 export const getScanHistory = async () => {
@@ -57,5 +58,5 @@ export const getScanHistory = async () => {
 };
 
 export const logout = async () => {
-  await chrome.storage.local.remove(['authToken', 'userId']);
+  await removeToken();
 };
