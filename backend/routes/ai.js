@@ -281,7 +281,7 @@ router.post(
         return res.status(413).json({
           error:
             `Contract text exceeds the ` +
-            `${MAX_CONTRACT_CHARS.toLocaleString()} ` +
+            `${MAX_CONTRACT_CHARS.toLocaleString('en-US')} ` +
             `character limit.`
         });
       }

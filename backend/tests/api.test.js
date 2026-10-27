@@ -371,6 +371,102 @@ describe('Scan history', () => {
 
     expect(response.body.scans[0].originalText).toBeUndefined();
   });
+
+test('deletes a scan belonging to the authenticated user', async () => {
+  // 1. Create a sample scan in our test database.
+  const scan = await ScanResult.create({
+    userId,
+    sourceUrl: 'https://example.com/terms',
+    originalText: 'Example contract for deletion',
+    darkPatternsFound: [],
+    aiSummary: 'Example analysis'
+  });
+
+  // 2. Send an authenticated DELETE request.
+  const response = await request(app)
+    .delete(`/api/scans/${scan._id}`)
+    .set('Authorization', `Bearer ${authToken}`)
+    .expect(200);
+
+  // 3. Confirm the API reports successful deletion.
+  expect(response.body.success).toBe(true);
+  expect(response.body.message).toBe(
+    'Scan deleted successfully.'
+  );
+
+  // 4. Confirm the scan no longer exists in MongoDB.
+  const deletedScan = await ScanResult.findById(scan._id);
+
+  expect(deletedScan).toBeNull();
+});
+
+test('rejects deletion without authentication', async () => {
+  const scan = await ScanResult.create({
+    userId,
+    originalText: 'Protected scan',
+    darkPatternsFound: [],
+    aiSummary: 'This scan should remain saved.'
+  });
+
+  const response = await request(app)
+    .delete(`/api/scans/${scan._id}`)
+    .expect(401);
+
+  expect(response.body.error).toBe(
+    'Authentication required.'
+  );
+
+  const savedScan = await ScanResult.findById(scan._id);
+
+  expect(savedScan).not.toBeNull();
+});
+
+test('rejects an invalid scan ID', async () => {
+  const response = await request(app)
+    .delete('/api/scans/invalid-id')
+    .set('Authorization', `Bearer ${authToken}`)
+    .expect(400);
+
+  expect(response.body.error).toBe('Invalid scan ID.');
+});
+
+test('returns 404 when the scan does not exist', async () => {
+  const nonexistentId = new mongoose.Types.ObjectId();
+
+  const response = await request(app)
+    .delete(`/api/scans/${nonexistentId}`)
+    .set('Authorization', `Bearer ${authToken}`)
+    .expect(404);
+
+  expect(response.body.error).toBe('Scan not found.');
+});
+
+test('prevents deleting another user’s scan', async () => {
+  const otherUser = await User.create({
+    email: 'another-user@example.com',
+    password: 'hashed-password'
+  });
+
+  const otherScan = await ScanResult.create({
+    userId: otherUser._id,
+    originalText: 'Another user contract',
+    darkPatternsFound: [],
+    aiSummary: 'Private analysis belonging to another user.'
+  });
+
+  const response = await request(app)
+    .delete(`/api/scans/${otherScan._id}`)
+    .set('Authorization', `Bearer ${authToken}`)
+    .expect(404);
+
+  expect(response.body.error).toBe('Scan not found.');
+
+  // Confirm the other user's document was NOT deleted.
+  const savedScan = await ScanResult.findById(otherScan._id);
+
+  expect(savedScan).not.toBeNull();
+});
+
 });
 
 describe('POST /api/ai/analyze validation', () => {
