@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import './App.css';
+
 import { exportAnalysisPdf } from './utils/exportReport.js';
 
 import {
@@ -15,6 +16,7 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Navigation from './components/Navigation.jsx';
 import HistoryList from './components/HistoryList.jsx';
+
 const MAX_CONTRACT_CHARS = 200000;
 
 function App() {
@@ -56,7 +58,7 @@ function App() {
     isScraping ||
     isAnalyzing;
 
-  // Check saved authentication when popup opens
+  // Check saved authentication when popup opens.
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -74,7 +76,7 @@ function App() {
     checkAuth();
   }, []);
 
-  // Handle user login
+  // Handle user login.
   const handleLogin = async (event) => {
     event.preventDefault();
 
@@ -102,7 +104,7 @@ function App() {
     }
   };
 
-  // Handle user logout
+  // Handle user logout.
   const handleLogout = async () => {
     if (isBusy) {
       return;
@@ -117,7 +119,6 @@ function App() {
 
       setEmail('');
       setPassword('');
-
       setScanHistory([]);
       setContractText('');
       setSourceUrl('');
@@ -131,7 +132,7 @@ function App() {
     }
   };
 
-  // Fetch previously saved scans
+  // Fetch previously saved scans.
   const handleShowHistory = async () => {
     if (isLoadingHistory) {
       return;
@@ -166,34 +167,36 @@ function App() {
       setIsLoadingHistory(false);
     }
   };
-  
-const handleDeleteScan = async (scanId) => {
-  try {
-    await deleteScan(scanId);
 
-    // Remove the deleted record without reloading history.
-    setScanHistory((previousScans) =>
-      previousScans.filter((scan) => scan._id !== scanId)
-    );
-  } catch (err) {
-    if (
-      err.message ===
-      'Your session has expired. Please log in again.'
-    ) {
-      setIsAuthenticated(false);
-      setAuthScreen('login');
-      setActiveTab('scanner');
-      setScanHistory([]);
-      setContractText('');
-      setSourceUrl('');
-      setAnalysis(null);
+  // Delete a saved scan.
+  const handleDeleteScan = async (scanId) => {
+    try {
+      await deleteScan(scanId);
+
+      // Update history immediately after successful deletion.
+      setScanHistory((previousScans) =>
+        previousScans.filter((scan) => scan._id !== scanId)
+      );
+    } catch (err) {
+      if (
+        err.message ===
+        'Your session has expired. Please log in again.'
+      ) {
+        setIsAuthenticated(false);
+        setAuthScreen('login');
+        setActiveTab('scanner');
+
+        setScanHistory([]);
+        setContractText('');
+        setSourceUrl('');
+        setAnalysis(null);
+      }
+
+      throw err;
     }
+  };
 
-    throw err;
-  }
-};
-
-  // Switch between Scanner, History and Account
+  // Switch between Scanner, History and Account.
   const handleTabChange = (tab) => {
     if (tab === 'history') {
       handleShowHistory();
@@ -203,7 +206,7 @@ const handleDeleteScan = async (scanId) => {
     }
   };
 
-  // Read text from the current webpage
+  // Read text from the current webpage.
   const handleScrapePage = async () => {
     setError('');
     setIsScraping(true);
@@ -265,7 +268,7 @@ const handleDeleteScan = async (scanId) => {
     }
   };
 
-  // Analyze contract through the backend Gemini API
+  // Analyze contract through the backend Gemini API.
   const handleAnalyze = async () => {
     if (isScraping || isAnalyzing) {
       return;
@@ -339,10 +342,11 @@ const handleDeleteScan = async (scanId) => {
     }
   };
 
-  // Show loading screen while checking authentication
+  // Show loading screen while checking authentication.
   if (checkingAuth) {
     return (
       <div
+        className="app-container"
         style={{
           width: '380px',
           padding: '16px',
@@ -354,46 +358,59 @@ const handleDeleteScan = async (scanId) => {
     );
   }
 
-  // Show Login or Register for unauthenticated users
+  // Show Login or Register for unauthenticated users.
   if (!isAuthenticated) {
     if (authScreen === 'register') {
       return (
-        <Register
-          onRegistered={() => {
-            setAuthMessage('Registration successful! Please log in.');
-            setError('');
-            setAuthScreen('login');
-          }}
-          onBackToLogin={() => {
-            setError('');
-            setAuthScreen('login');
-          }}
-        />
+        <div
+          className="app-container"
+          style={{ width: '380px' }}
+        >
+          <Register
+            onRegistered={() => {
+              setAuthMessage(
+                'Registration successful! Please log in.'
+              );
+              setError('');
+              setAuthScreen('login');
+            }}
+            onBackToLogin={() => {
+              setError('');
+              setAuthScreen('login');
+            }}
+          />
+        </div>
       );
     }
 
     return (
-      <Login
-        email={email}
-        password={password}
-        setEmail={setEmail}
-        setPassword={setPassword}
-        handleLogin={handleLogin}
-        isLoggingIn={isLoggingIn}
-        error={error}
-        authMessage={authMessage}
-        onShowRegister={() => {
-          setAuthMessage('');
-          setError('');
-          setAuthScreen('register');
-        }}
-      />
+      <div
+        className="app-container"
+        style={{ width: '380px' }}
+      >
+        <Login
+          email={email}
+          password={password}
+          setEmail={setEmail}
+          setPassword={setPassword}
+          handleLogin={handleLogin}
+          isLoggingIn={isLoggingIn}
+          error={error}
+          authMessage={authMessage}
+          onShowRegister={() => {
+            setAuthMessage('');
+            setError('');
+            setAuthScreen('register');
+          }}
+        />
+      </div>
     );
   }
 
-  // Main authenticated extension interface
+  // Main authenticated extension interface.
   return (
     <div
+      className="app-container"
       style={{
         width: '380px',
         padding: '16px',
@@ -402,6 +419,7 @@ const handleDeleteScan = async (scanId) => {
       }}
     >
       <h2
+        className="app-title"
         style={{
           margin: '0 0 12px 0',
           color: '#1a1a1a'
@@ -420,6 +438,7 @@ const handleDeleteScan = async (scanId) => {
       {activeTab === 'scanner' && (
         <div>
           <p
+            className="app-description"
             style={{
               margin: '0 0 16px 0',
               fontSize: '13px',
@@ -431,18 +450,23 @@ const handleDeleteScan = async (scanId) => {
           </p>
 
           <button
+            className="scrape-button"
             onClick={handleScrapePage}
             disabled={isScraping || isAnalyzing}
             style={{
               width: '100%',
               padding: '10px',
               marginBottom: '12px',
-              backgroundColor: isScraping ? '#9ca3af' : '#10b981',
+              backgroundColor: isScraping
+                ? '#9ca3af'
+                : '#10b981',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
               fontWeight: 'bold',
-              cursor: isScraping ? 'not-allowed' : 'pointer'
+              cursor: isScraping
+                ? 'not-allowed'
+                : 'pointer'
             }}
           >
             {isScraping
@@ -451,12 +475,13 @@ const handleDeleteScan = async (scanId) => {
           </button>
 
           <textarea
+            className="contract-textarea"
             rows="6"
             maxLength={MAX_CONTRACT_CHARS}
             placeholder="Paste legal text here..."
             value={contractText}
-            onChange={(e) => {
-              setContractText(e.target.value);
+            onChange={(event) => {
+              setContractText(event.target.value);
               setSourceUrl('');
               setAnalysis(null);
             }}
@@ -473,6 +498,7 @@ const handleDeleteScan = async (scanId) => {
           />
 
           <div
+            className="character-count"
             style={{
               marginTop: '6px',
               marginBottom: '12px',
@@ -489,13 +515,16 @@ const handleDeleteScan = async (scanId) => {
           </div>
 
           <button
+            className="analyze-button"
             onClick={handleAnalyze}
             disabled={isAnalyzing || isScraping}
             style={{
               width: '100%',
               padding: '10px',
               marginTop: '12px',
-              backgroundColor: isAnalyzing ? '#888' : '#2563eb',
+              backgroundColor: isAnalyzing
+                ? '#888'
+                : '#2563eb',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
@@ -513,6 +542,7 @@ const handleDeleteScan = async (scanId) => {
 
           {error && (
             <p
+              className="error-message"
               style={{
                 color: '#dc2626',
                 fontSize: '12px',
@@ -526,6 +556,7 @@ const handleDeleteScan = async (scanId) => {
           {/* Gemini analysis results */}
           {analysis && (
             <div
+              className="analysis-output"
               style={{
                 marginTop: '16px',
                 padding: '12px',
@@ -538,49 +569,55 @@ const handleDeleteScan = async (scanId) => {
               }}
             >
               <strong>Analysis Results:</strong>
-              
-<button
-  type="button"
-  onClick={async() => {
-    try {
-      exportAnalysisPdf({
-        analysis,
-        sourceUrl
-      });
-    } catch (err) {
-      console.error('PDF export error:', err);
-      setError('Could not export the analysis report.');
-    }
-  }}
-  style={{
-    display: 'block',
-    width: '100%',
-    marginTop: '10px',
-    padding: '9px',
-    border: 'none',
-    borderRadius: '6px',
-    backgroundColor: '#2563eb',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer'
-  }}
->
-  Download PDF Report
-</button>
 
+              {/* Export the current analysis as a PDF */}
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await exportAnalysisPdf({
+                      analysis,
+                      sourceUrl
+                    });
+                  } catch (err) {
+                    console.error('PDF export error:', err);
+                    setError(
+                      'Could not export the analysis report.'
+                    );
+                  }
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: '10px',
+                  padding: '9px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                Download PDF Report
+              </button>
 
-              <div style={{ marginTop: '8px' }}>
+              <div
+                className="analysis-summary"
+                style={{ marginTop: '12px' }}
+              >
                 <strong>Summary</strong>
                 <p>{analysis.aiSummary}</p>
               </div>
 
               {analysis.darkPatternsFound.length > 0 && (
-                <div style={{ marginTop: '12px' }}>
+                <div className="potential-risks">
                   <strong>Potential Risks</strong>
 
                   {analysis.darkPatternsFound.map(
                     (pattern, index) => (
                       <div
+                        className="risk-item"
                         key={index}
                         style={{ marginTop: '8px' }}
                       >
@@ -596,7 +633,7 @@ const handleDeleteScan = async (scanId) => {
               )}
 
               {analysis.darkPatternsFound.length === 0 && (
-                <p style={{ marginTop: '8px' }}>
+                <p className="no-risks">
                   No meaningful dark patterns or consumer risks
                   were identified.
                 </p>
@@ -606,43 +643,42 @@ const handleDeleteScan = async (scanId) => {
         </div>
       )}
 
-      
-{/* HISTORY TAB */}
-{activeTab === 'history' && (
-  <div>
-    <h3
-      style={{
-        margin: '0 0 12px 0',
-        color: '#1a1a1a'
-      }}
-    >
-      Scan History
-    </h3>
+      {/* HISTORY TAB */}
+      {activeTab === 'history' && (
+        <div>
+          <h3
+            style={{
+              margin: '0 0 12px 0',
+              color: '#1a1a1a'
+            }}
+          >
+            Scan History
+          </h3>
 
-    {isLoadingHistory ? (
-      <p style={{ fontSize: '13px', color: '#666' }}>
-        Loading your scan history...
-      </p>
-    ) : error ? (
-      <p style={{ fontSize: '12px', color: '#dc2626' }}>
-        {error}
-      </p>
-    ) : (
-      <div
-        style={{
-          maxHeight: '400px',
-          overflowY: 'auto'
-        }}
-      >
-        <HistoryList
-  scans={scanHistory}
-  onDeleteScan={handleDeleteScan}
-/>
-      </div>
-    )}
-  </div>
-)}
-
+          {isLoadingHistory ? (
+            <p style={{ fontSize: '13px', color: '#666' }}>
+              Loading your scan history...
+            </p>
+          ) : error ? (
+            <p className="error-message">
+              {error}
+            </p>
+          ) : (
+            <div
+              className="history-list"
+              style={{
+                maxHeight: '400px',
+                overflowY: 'auto'
+              }}
+            >
+              <HistoryList
+                scans={scanHistory}
+                onDeleteScan={handleDeleteScan}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ACCOUNT TAB */}
       {activeTab === 'account' && (
@@ -675,30 +711,37 @@ const handleDeleteScan = async (scanId) => {
           </p>
 
           <button
+            className="logout-button"
             onClick={handleLogout}
             disabled={isBusy}
             style={{
               width: '100%',
               marginTop: '12px',
               padding: '10px',
-              backgroundColor: isBusy ? '#9ca3af' : '#ef4444',
+              backgroundColor: isBusy
+                ? '#9ca3af'
+                : '#ef4444',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
               fontWeight: 'bold',
-              cursor: isBusy ? 'not-allowed' : 'pointer'
+              cursor: isBusy
+                ? 'not-allowed'
+                : 'pointer'
             }}
           >
             Log Out
           </button>
 
           {error && (
-            <p style={{ color: '#dc2626', fontSize: '12px' }}>
+            <p className="error-message">
               {error}
             </p>
           )}
         </div>
       )}
+
+      {/* Shared footer, visible on all authenticated tabs */}
     </div>
   );
 }

@@ -310,59 +310,6 @@ button {
   background: #b91c1c;
 }
 
-.app-footer {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 12px;
-  padding: 20px 12px 12px;
-  border-top: 1px solid #d1d5db;
-  background: #f8fafc;
-  color: #6b7280;
-  text-align: center;
-}
-
-.footer-main {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: nowrap;
-  gap: 32px;
-  margin: 0 0 16px;
-  padding: 0;
-}
-
-.footer-main span {
-  margin: 0;
-  color: #374151;
-  font-size: 16px;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.footer-main a {
-  margin: 0;
-  color: #3563eb;
-  font-size: 16px;
-  font-weight: 400;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.footer-main a:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
-
-.footer-copyright {
-  margin: 0;
-  padding: 0;
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.5;
-  text-align: center;
-}
-
 @media (max-width: 480px) {
   .analysis-header {
     align-items: flex-start;
@@ -379,24 +326,5 @@ button {
 
   .risk-evidence {
     padding: 10px;
-  }
-
-  .app-footer {
-    margin-top: 12px;
-    padding: 18px 8px 12px;
-  }
-
-  .footer-main {
-    gap: 16px;
-    margin-bottom: 14px;
-  }
-
-  .footer-main span,
-  .footer-main a {
-    font-size: 13px;
-  }
-
-  .footer-copyright {
-    font-size: 12px;
   }
 }

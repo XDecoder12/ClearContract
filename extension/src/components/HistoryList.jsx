@@ -289,7 +289,7 @@ function HistoryList({ scans, onDeleteScan }) {
           
 <button
   type="button"
-  onClick={() => {
+  onClick={async() => {
     try {
       setDeleteError('');
 
