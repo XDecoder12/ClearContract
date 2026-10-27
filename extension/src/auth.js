@@ -60,3 +60,34 @@ export const getScanHistory = async () => {
 export const logout = async () => {
   await removeToken();
 };
+
+export const deleteScan = async (scanId) => {
+  const token = await getAuthToken();
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/scans/${encodeURIComponent(scanId)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  if (response.status === 401) {
+    await logout();
+    throw new Error('Your session has expired. Please log in again.');
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to delete scan.');
+  }
+
+  return data;
+};

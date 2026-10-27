@@ -6,6 +6,7 @@ import {
   login,
   getAuthToken,
   getScanHistory,
+  deleteScan,
   logout
 } from './auth.js';
 
@@ -164,6 +165,32 @@ function App() {
       setIsLoadingHistory(false);
     }
   };
+  
+const handleDeleteScan = async (scanId) => {
+  try {
+    await deleteScan(scanId);
+
+    // Remove the deleted record without reloading history.
+    setScanHistory((previousScans) =>
+      previousScans.filter((scan) => scan._id !== scanId)
+    );
+  } catch (err) {
+    if (
+      err.message ===
+      'Your session has expired. Please log in again.'
+    ) {
+      setIsAuthenticated(false);
+      setAuthScreen('login');
+      setActiveTab('scanner');
+      setScanHistory([]);
+      setContractText('');
+      setSourceUrl('');
+      setAnalysis(null);
+    }
+
+    throw err;
+  }
+};
 
   // Switch between Scanner, History and Account
   const handleTabChange = (tab) => {
@@ -576,7 +603,10 @@ function App() {
           overflowY: 'auto'
         }}
       >
-        <HistoryList scans={scanHistory} />
+        <HistoryList
+  scans={scanHistory}
+  onDeleteScan={handleDeleteScan}
+/>
       </div>
     )}
   </div>

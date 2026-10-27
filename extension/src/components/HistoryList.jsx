@@ -1,15 +1,50 @@
 
 import { useState } from 'react';
 
-function HistoryList({ scans }) {
+function HistoryList({ scans, onDeleteScan }) {
   const [openScan, setOpenScan] = useState(null);
+  const [deletingScanId, setDeletingScanId] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
 
-  if (scans.length === 0) {
-    return <p>No scans found yet.</p>;
-  }
+  const handleDelete = async (scan) => {
+    const confirmed = window.confirm(
+      'Delete this scan permanently? This action cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteError('');
+    setDeletingScanId(scan._id);
+
+    try {
+      await onDeleteScan(scan._id);
+
+      if (openScan === scan._id) {
+        setOpenScan(null);
+      }
+    } catch (error) {
+      setDeleteError(
+        error.message || 'Could not delete the scan.'
+      );
+    } finally {
+      setDeletingScanId(null);
+    }
+  };
 
   return (
     <div>
+      {deleteError && (
+        <p role="alert" style={{ color: '#dc2626' }}>
+          {deleteError}
+        </p>
+      )}
+
+      {scans.length === 0 && (
+        <p>No scans found yet.</p>
+      )}
+
       {scans.map((scan) => (
         <div
           key={scan._id}
@@ -24,11 +59,9 @@ function HistoryList({ scans }) {
           <button
             type="button"
             onClick={() => {
-              if (openScan === scan._id) {
-                setOpenScan(null);
-              } else {
-                setOpenScan(scan._id);
-              }
+              setOpenScan(
+                openScan === scan._id ? null : scan._id
+              );
             }}
             style={{
               width: '100%',
@@ -36,7 +69,8 @@ function HistoryList({ scans }) {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              padding: '0'
+              padding: 0,
+              overflowWrap: 'anywhere'
             }}
           >
             <strong>
@@ -52,7 +86,9 @@ function HistoryList({ scans }) {
             </p>
 
             <span>
-              {openScan === scan._id ? '▲ Hide Details' : '▼ Show Details'}
+              {openScan === scan._id
+                ? '▲ Hide Details'
+                : '▼ Show Details'}
             </span>
           </button>
 
@@ -85,6 +121,28 @@ function HistoryList({ scans }) {
               )}
             </div>
           )}
+
+          <button
+            type="button"
+            disabled={deletingScanId !== null}
+            onClick={() => handleDelete(scan)}
+            style={{
+              marginTop: '12px',
+              padding: '7px 12px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: deletingScanId !== null
+                ? 'not-allowed'
+                : 'pointer',
+              opacity: deletingScanId !== null ? 0.6 : 1
+            }}
+          >
+            {deletingScanId === scan._id
+              ? 'Deleting...'
+              : 'Delete Scan'}
+          </button>
         </div>
       ))}
     </div>
