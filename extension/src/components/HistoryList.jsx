@@ -6,6 +6,49 @@ function HistoryList({ scans, onDeleteScan }) {
   const [deletingScanId, setDeletingScanId] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
+  // Search, filter and sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [riskFilter, setRiskFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
+
+  // Filter scans by search query and detected risks,
+  // then sort by scan date.
+  const filteredScans = scans
+    .filter((scan) => {
+      const query = searchQuery.trim().toLowerCase();
+
+      const searchableText = [
+        scan.sourceUrl || '',
+        scan.aiSummary || '',
+        ...(scan.darkPatternsFound || []).flatMap((pattern) => [
+          pattern.category || '',
+          pattern.explanation || ''
+        ])
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const matchesSearch = searchableText.includes(query);
+
+      const riskCount = scan.darkPatternsFound?.length || 0;
+
+      const matchesRisk =
+        riskFilter === 'all' ||
+        (riskFilter === 'risky' && riskCount > 0) ||
+        (riskFilter === 'safe' && riskCount === 0);
+
+      return matchesSearch && matchesRisk;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.scannedAt).getTime();
+      const dateB = new Date(b.scannedAt).getTime();
+
+      return sortOrder === 'newest'
+        ? dateB - dateA
+        : dateA - dateB;
+    });
+
+  // Delete a scan only after confirmation.
   const handleDelete = async (scan) => {
     const confirmed = window.confirm(
       'Delete this scan permanently? This action cannot be undone.'
@@ -35,17 +78,111 @@ function HistoryList({ scans, onDeleteScan }) {
 
   return (
     <div>
+      {/* Search and filter controls */}
+      <div style={{ marginBottom: '12px' }}>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search scans, websites or risks..."
+          aria-label="Search scan history"
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '9px',
+            marginBottom: '8px',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
+            fontSize: '12px'
+          }}
+        />
+
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px'
+          }}
+        >
+          <select
+            value={riskFilter}
+            onChange={(event) => setRiskFilter(event.target.value)}
+            aria-label="Filter scans by risk"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: '7px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              fontSize: '12px'
+            }}
+          >
+            <option value="all">All scans</option>
+            <option value="risky">Risks detected</option>
+            <option value="safe">No risks detected</option>
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+            aria-label="Sort scans by date"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: '7px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              fontSize: '12px'
+            }}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
+
+        {/* Number of matching records */}
+        <p
+          style={{
+            margin: '10px 0 0',
+            fontSize: '11px',
+            color: '#666'
+          }}
+        >
+          Showing {filteredScans.length} of {scans.length} scans
+        </p>
+      </div>
+
+      {/* Deletion error */}
       {deleteError && (
-        <p role="alert" style={{ color: '#dc2626' }}>
+        <p
+          role="alert"
+          style={{
+            color: '#dc2626',
+            fontSize: '12px'
+          }}
+        >
           {deleteError}
         </p>
       )}
 
+      {/* Empty history */}
       {scans.length === 0 && (
         <p>No scans found yet.</p>
       )}
 
-      {scans.map((scan) => (
+      {/* No matching search results */}
+      {scans.length > 0 && filteredScans.length === 0 && (
+        <p
+          style={{
+            fontSize: '12px',
+            color: '#666'
+          }}
+        >
+          No scans match your search or filters.
+        </p>
+      )}
+
+      {/* Scan history cards */}
+      {filteredScans.map((scan) => (
         <div
           key={scan._id}
           style={{
@@ -56,6 +193,7 @@ function HistoryList({ scans, onDeleteScan }) {
             fontSize: '12px'
           }}
         >
+          {/* Expand or collapse a scan */}
           <button
             type="button"
             onClick={() => {
@@ -63,6 +201,7 @@ function HistoryList({ scans, onDeleteScan }) {
                 openScan === scan._id ? null : scan._id
               );
             }}
+            aria-expanded={openScan === scan._id}
             style={{
               width: '100%',
               textAlign: 'left',
@@ -92,6 +231,7 @@ function HistoryList({ scans, onDeleteScan }) {
             </span>
           </button>
 
+          {/* Expanded analysis details */}
           {openScan === scan._id && (
             <div style={{ marginTop: '12px' }}>
               <strong>AI Summary</strong>
@@ -122,6 +262,7 @@ function HistoryList({ scans, onDeleteScan }) {
             </div>
           )}
 
+          {/* Delete button */}
           <button
             type="button"
             disabled={deletingScanId !== null}
@@ -133,9 +274,10 @@ function HistoryList({ scans, onDeleteScan }) {
               color: 'white',
               border: 'none',
               borderRadius: '5px',
-              cursor: deletingScanId !== null
-                ? 'not-allowed'
-                : 'pointer',
+              cursor:
+                deletingScanId !== null
+                  ? 'not-allowed'
+                  : 'pointer',
               opacity: deletingScanId !== null ? 0.6 : 1
             }}
           >
