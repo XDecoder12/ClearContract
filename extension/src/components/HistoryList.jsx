@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { exportAnalysisPdf } from '../utils/exportReport.js';
 
 function HistoryList({ scans, onDeleteScan }) {
   const [openScan, setOpenScan] = useState(null);
@@ -285,6 +286,40 @@ function HistoryList({ scans, onDeleteScan }) {
               ? 'Deleting...'
               : 'Delete Scan'}
           </button>
+          
+<button
+  type="button"
+  onClick={() => {
+    try {
+      setDeleteError('');
+
+      exportAnalysisPdf({
+        analysis: {
+          aiSummary: scan.aiSummary,
+          darkPatternsFound: scan.darkPatternsFound || []
+        },
+        sourceUrl: scan.sourceUrl,
+        scannedAt: scan.scannedAt
+      });
+    } catch (err) {
+      console.error('PDF export error:', err);
+      setDeleteError('Could not export the scan report.');
+    }
+  }}
+  style={{
+    marginTop: '12px',
+    marginLeft: '8px',
+    padding: '7px 12px',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer'
+  }}
+>
+  Download PDF
+</button>
+
         </div>
       ))}
     </div>

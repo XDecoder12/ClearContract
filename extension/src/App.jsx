@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import './App.css';
+import { exportAnalysisPdf } from './utils/exportReport.js';
 
 import {
   login,
@@ -537,6 +538,36 @@ const handleDeleteScan = async (scanId) => {
               }}
             >
               <strong>Analysis Results:</strong>
+              
+<button
+  type="button"
+  onClick={async() => {
+    try {
+      exportAnalysisPdf({
+        analysis,
+        sourceUrl
+      });
+    } catch (err) {
+      console.error('PDF export error:', err);
+      setError('Could not export the analysis report.');
+    }
+  }}
+  style={{
+    display: 'block',
+    width: '100%',
+    marginTop: '10px',
+    padding: '9px',
+    border: 'none',
+    borderRadius: '6px',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  }}
+>
+  Download PDF Report
+</button>
+
 
               <div style={{ marginTop: '8px' }}>
                 <strong>Summary</strong>
