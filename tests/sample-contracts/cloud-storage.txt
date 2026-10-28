@@ -1,0 +1,44 @@
+SAMPLE CONTRACT — CLOUD STORAGE SERVICE
+QA TEST DOCUMENT — FICTIONAL CONTRACT
+
+1. SUBSCRIPTION
+
+Paid storage plans are billed on a recurring basis according to the
+selected billing period.
+
+2. AUTOMATIC RENEWAL
+
+Unless cancelled before the next billing date, the storage plan will
+automatically renew.
+
+3. STORAGE LIMITS
+
+The provider may modify storage limits or introduce new service tiers
+after notifying customers.
+
+4. ACCOUNT SUSPENSION
+
+An account may be suspended if payment is not received or if the customer
+violates the applicable service terms.
+
+5. DATA RETENTION
+
+If an account remains inactive or is terminated under applicable policies,
+stored content may eventually be deleted after any required notice period.
+
+6. CUSTOMER CONTENT
+
+Customers retain ownership of their files. The provider may process and
+store files as necessary to operate, maintain, secure, and improve the
+storage service.
+
+7. BACKUPS
+
+Customers are responsible for maintaining independent backups of important
+files.
+
+8. LIABILITY
+
+The provider does not guarantee that stored data will always remain
+available and limits responsibility for certain losses to the extent
+permitted by law.

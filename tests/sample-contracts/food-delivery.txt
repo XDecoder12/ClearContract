@@ -1,0 +1,86 @@
+SAMPLE CONTRACT — FOOD DELIVERY PLATFORM
+QA TEST DOCUMENT — FICTIONAL ZOMATO-INSPIRED CONTRACT
+NOT THE ACTUAL ZOMATO TERMS OF SERVICE
+
+1. ORDERING AND DELIVERY
+
+The platform facilitates food orders between customers and restaurant
+partners. Delivery may be performed by restaurant partners or third-party
+delivery partners.
+
+Delivery times displayed when an order is placed are estimates only and
+may vary depending on restaurant preparation, distance, traffic, weather,
+and other operational conditions.
+
+2. DELIVERY CHARGES AND SURGE
+
+Customers may be charged delivery fees for an order.
+
+Delivery charges may vary between orders depending on factors including
+restaurant, order value, distance, time of day, and other applicable
+parameters.
+
+Additional delivery surge charges may also apply during periods of high
+demand or based on distance, traffic, weather, or other operational
+conditions.
+
+3. FOOD AND RESTAURANT RESPONSIBILITY
+
+Restaurants are responsible for the preparation, quality, quantity,
+ingredients, and availability of the food they provide.
+
+The platform acts as an intermediary and may not be responsible for
+certain acts or omissions of restaurant partners or delivery partners.
+
+4. PRICES
+
+Prices displayed on the platform are provided by restaurant partners and
+may change.
+
+If the price displayed on the platform differs from the price charged by
+the restaurant, the applicable terms may determine which price is treated
+as final.
+
+5. CANCELLATION
+
+Orders may be cancelled in certain circumstances, including when a
+restaurant cannot fulfil an order or when the customer provides incorrect
+information.
+
+The platform may determine whether a cancelled order is eligible for a
+refund according to its applicable policies.
+
+6. REFUNDS
+
+Where a refund is applicable, the amount may be returned to the original
+payment method.
+
+Customers may not be eligible for a refund where incorrect contact
+information or delivery details were provided, or where the customer was
+unavailable or unreachable for fulfilment of the order.
+
+7. PROMOTIONS AND OFFERS
+
+Promotional offers, discounts, delivery plans, and coupons may have
+additional conditions, expiry dates, minimum order requirements, limited
+availability, or other eligibility restrictions.
+
+The platform may modify or withdraw promotional offers according to the
+applicable offer terms.
+
+8. TERMS CHANGES
+
+The platform may update or modify its terms from time to time.
+
+Customers are responsible for reviewing the updated terms. Continued use
+of the platform after changes take effect may constitute acceptance of
+the updated terms.
+
+9. DATA AND ACCOUNT INFORMATION
+
+Customers may be required to provide information such as their contact
+number and delivery address when placing an order.
+
+Customers are responsible for ensuring that the information provided is
+accurate and complete and agree that the information may be processed in
+accordance with the platform's applicable terms and privacy policies.

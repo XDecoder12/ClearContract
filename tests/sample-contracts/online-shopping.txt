@@ -1,0 +1,37 @@
+SAMPLE CONTRACT — ONLINE SHOPPING PLATFORM
+QA TEST DOCUMENT — FICTIONAL CONTRACT
+
+1. ORDERS
+
+The platform may cancel an order if a product is unavailable or if the
+platform determines that a listed price contains an error.
+
+2. ADDITIONAL CHARGES
+
+Customers may be required to pay applicable taxes, delivery charges,
+service charges, handling charges, or other fees associated with an order.
+
+3. RETURNS
+
+Certain promotional, discounted, personalized, or specially prepared
+products may not be eligible for return.
+
+4. REFUNDS
+
+Refunds may be issued after the returned product has been received and
+reviewed. Processing times may vary.
+
+5. THIRD-PARTY SELLERS
+
+Products may be supplied by independent sellers. Additional terms may
+apply to transactions involving third-party sellers.
+
+6. POLICY CHANGES
+
+The platform may update its terms, policies, and service rules by
+publishing revised versions online.
+
+7. PERSONALIZATION
+
+The platform may use information about customer activity and preferences
+to personalize product recommendations and advertisements.
