@@ -353,4 +353,160 @@ describe('Successful AI analysis', () => {
     // Preserve the original contract separately.
     expect(savedScan.originalText).toBe(contractText);
   });
+  test('recovers from invalid chunk evidence and saves a verified scan', async () => {
+    const contractText =
+      'The subscription automatically renews unless cancelled.';
+
+    const invalidAnalysis = {
+      overallRiskLevel: 'MEDIUM',
+      aiSummary: 'The subscription renews automatically.',
+      darkPatternsFound: [
+        {
+          category: 'Automatic Renewal',
+          severity: 'MEDIUM',
+          explanation: 'The customer must cancel before renewal.',
+          evidence: 'The subscription renews every 7 days.'
+        }
+      ]
+    };
+
+    const correctedAnalysis = {
+      overallRiskLevel: 'MEDIUM',
+      aiSummary: 'The subscription renews automatically.',
+      darkPatternsFound: [
+        {
+          category: 'Automatic Renewal',
+          severity: 'MEDIUM',
+          explanation: 'The customer must cancel before renewal.',
+          evidence: contractText
+        }
+      ]
+    };
+
+    mockGenerateContent
+      // First attempt: evidence does not appear in the contract.
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(invalidAnalysis)
+        }
+      })
+      // Correction attempt: valid supporting quotation.
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(correctedAnalysis)
+        }
+      })
+      // Final synthesis.
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(correctedAnalysis)
+        }
+      });
+
+    const response = await request(app)
+      .post('/api/ai/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ contractText })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.analysis).toEqual(correctedAnalysis);
+    expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+
+    const savedScans = await ScanResult.find({}).lean();
+
+    expect(savedScans).toHaveLength(1);
+    expect(savedScans[0]._id.toString()).toBe(
+      response.body.scanId.toString()
+    );
+    expect(savedScans[0].overallRiskLevel).toBe('MEDIUM');
+    expect(savedScans[0].darkPatternsFound[0].evidence).toBe(
+      contractText
+    );
+
+    // Confirm the correction prompt was actually used.
+    const correctionPrompt =
+      mockGenerateContent.mock.calls[1][0];
+
+    expect(correctionPrompt).toContain(
+      'EVIDENCE CORRECTION REQUIRED'
+    );
+  });
+  test('recovers from invalid synthesis evidence', async () => {
+    const contractText =
+      'The provider may change the subscription price after notice.';
+
+    const validAnalysis = {
+      overallRiskLevel: 'MEDIUM',
+      aiSummary: 'The provider may change prices.',
+      darkPatternsFound: [
+        {
+          category: 'Price Changes',
+          severity: 'MEDIUM',
+          explanation: 'Subscription prices may change.',
+          evidence: contractText
+        }
+      ]
+    };
+
+    const invalidSynthesis = {
+      ...validAnalysis,
+      darkPatternsFound: [
+        {
+          ...validAnalysis.darkPatternsFound[0],
+          evidence: 'The provider may double prices without notice.'
+        }
+      ]
+    };
+
+    mockGenerateContent
+      // Valid chunk.
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(validAnalysis)
+        }
+      })
+      // Invalid first synthesis.
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(invalidSynthesis)
+        }
+      })
+      // Valid corrected synthesis.
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(validAnalysis)
+        }
+      });
+
+    const response = await request(app)
+      .post('/api/ai/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ contractText })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.analysis).toEqual(validAnalysis);
+
+    // One chunk call, two synthesis calls.
+    expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+
+    const correctionPrompt =
+      mockGenerateContent.mock.calls[2][0];
+
+    expect(correctionPrompt).toContain(
+      'EVIDENCE CORRECTION REQUIRED'
+    );
+
+    expect(await ScanResult.countDocuments()).toBe(1);
+
+    const savedScan = await ScanResult.findById(
+      response.body.scanId
+    ).lean();
+
+    expect(savedScan.darkPatternsFound[0].evidence).toBe(
+      contractText
+    );
+  });
+
 });

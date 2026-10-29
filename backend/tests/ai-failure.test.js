@@ -94,41 +94,58 @@ describe('AI failure handling', () => {
 
     expect(scanCount).toBe(0);
   });
-test('rejects fabricated evidence without saving a scan', async () => {
-    const analysis = {
-    overallRiskLevel: 'HIGH',
-    aiSummary: 'A risk was detected.',
-    darkPatternsFound: [
-      {
-        category: 'Hidden Fee',
-        severity: 'HIGH',
-        explanation: 'An additional charge applies.',
-        evidence: 'A hidden fee of INR 5000 applies.'
-      }
-    ]
-  };
 
-  mockGenerateContent.mockResolvedValueOnce({
-    response: {
-      text: () => JSON.stringify(analysis)
-    }
+  test('rejects fabricated evidence after correction attempts without saving a scan', async () => {
+    const contractText =
+      'The customer may cancel their membership at any time.';
+
+    const invalidAnalysis = {
+      overallRiskLevel: 'HIGH',
+      aiSummary: 'A risk was detected.',
+      darkPatternsFound: [
+        {
+          category: 'Hidden Fee',
+          severity: 'HIGH',
+          explanation: 'An additional charge applies.',
+          evidence: 'A hidden fee of INR 5000 applies.'
+        }
+      ]
+    };
+
+    mockGenerateContent
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(invalidAnalysis)
+        }
+      })
+      .mockResolvedValueOnce({
+        response: {
+          text: () => JSON.stringify(invalidAnalysis)
+        }
+      });
+
+    const response = await request(app)
+      .post('/api/ai/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ contractText })
+      .expect(500);
+
+    expect(response.body.error).toBe(
+      'Failed to analyze the contract.'
+    );
+
+    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+
+    const correctionPrompt =
+      mockGenerateContent.mock.calls[1][0];
+
+    expect(correctionPrompt).toContain(
+      'EVIDENCE CORRECTION REQUIRED'
+    );
+
+    expect(await ScanResult.countDocuments()).toBe(0);
   });
 
-  const response = await request(app)
-    .post('/api/ai/analyze')
-    .set('Authorization', `Bearer ${authToken}`)
-    .send({
-      contractText:
-        'The customer may cancel their membership at any time.'
-    })
-    .expect(500);
-
-  expect(response.body.error).toBe(
-    'Failed to analyze the contract.'
-  );
-
-  expect(await ScanResult.countDocuments()).toBe(0);
-});
 
   test('retries a temporary Gemini failure and succeeds', async () => {
     const chunkAnalysis = {

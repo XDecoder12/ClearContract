@@ -257,6 +257,76 @@ const validateEvidenceAgainstText = (analysis, text) => {
 };
 
 
+const generateVerifiedAnalysis = async (
+  model,
+  initialPrompt,
+  referenceText
+) => {
+  const maxEvidenceAttempts = 2;
+
+  for (
+    let attempt = 1;
+    attempt <= maxEvidenceAttempts;
+    attempt += 1
+  ) {
+    const prompt =
+      attempt === 1
+        ? initialPrompt
+        : `${initialPrompt}
+
+EVIDENCE CORRECTION REQUIRED:
+
+The previous response contained at least one quotation
+that could not be verified against the source text.
+
+Generate the analysis again.
+
+Rules:
+- Copy evidence directly from the supplied source.
+- Do not paraphrase or reconstruct quotations.
+- Do not combine separate passages into one quotation.
+- Preserve the wording and punctuation.
+- Omit findings without verifiable evidence.
+- Do not classify the contract as safe merely because
+  supporting evidence cannot be verified.
+- Return only the required JSON object.`;
+
+    const result = await generateContentWithRetry(
+      model,
+      prompt
+    );
+
+    const analysis = JSON.parse(
+      result.response.text()
+    );
+
+    if (!validateAnalysisResult(analysis)) {
+      throw new Error(
+        'AI returned an invalid analysis format.'
+      );
+    }
+
+    if (
+      validateEvidenceAgainstText(
+        analysis,
+        referenceText
+      )
+    ) {
+      return analysis;
+    }
+
+    console.warn(
+      `AI evidence verification failed on attempt ` +
+      `${attempt} of ${maxEvidenceAttempts}.`
+    );
+  }
+
+  throw new Error(
+    'AI evidence verification failed after correction.'
+  );
+};
+
+
 
 const analyzeContractChunk = async (
   model,
@@ -266,47 +336,37 @@ const analyzeContractChunk = async (
 ) => {
   const prompt = `${contractAnalysisPrompt}
 
-This is section ${chunkIndex + 1} of ${totalChunks} of the contract.
+This is section ${chunkIndex + 1} of ${totalChunks}
+of the contract.
 
 Analyze only the text provided in this section.
 
-Do not assume facts from other sections that are not included here.
+Do not assume facts from other sections.
 
 ${chunk}`;
 
-  const result = await generateContentWithRetry(
+  return generateVerifiedAnalysis(
     model,
-    prompt
+    prompt,
+    chunk
   );
-
-  const analysis = JSON.parse(
-    result.response.text()
-  );
-
-  if (!validateAnalysisResult(analysis)) {
-    throw new Error(
-      'AI returned an invalid analysis format.'
-    );
-  }
-  if (!validateEvidenceAgainstText(analysis, chunk)) {
-  throw new Error(
-    'AI returned evidence not found in the contract section.'
-  );
-}
-  return analysis;
 };
+
+
+
 
 const synthesizeChunkAnalyses = async (
   model,
-  chunkAnalyses
+  chunkAnalyses,
+  originalText
 ) => {
   const analysisNotes = chunkAnalyses
     .map(
       (analysis, index) => `
-    Analysis ${index + 1}:
+Analysis ${index + 1}:
 
-    ${JSON.stringify(analysis)}
-    `
+${JSON.stringify(analysis)}
+`
     )
     .join('\n');
 
@@ -314,23 +374,13 @@ const synthesizeChunkAnalyses = async (
 
 ${analysisNotes}`;
 
-  const result = await generateContentWithRetry(
+  return generateVerifiedAnalysis(
     model,
-    prompt
+    prompt,
+    originalText
   );
-
-  const synthesis = JSON.parse(
-    result.response.text()
-  );
-
-  if (!validateAnalysisResult(synthesis)) {
-    throw new Error(
-      'AI returned an invalid synthesis format.'
-    );
-  }
-
-  return synthesis;
 };
+
 
 router.post(
   '/analyze',
@@ -416,10 +466,10 @@ router.post(
         chunkAnalyses.push(chunkAnalysis);
       }
 
-      const synthesis =
-        await synthesizeChunkAnalyses(
+      const synthesis = await synthesizeChunkAnalyses(
           model,
-          chunkAnalyses
+          chunkAnalyses,
+          normalizedContractText
         );
 
       if (
