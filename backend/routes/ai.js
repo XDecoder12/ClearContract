@@ -17,6 +17,10 @@ const CHUNK_OVERLAP = 500;
 const analysisResponseSchema = {
   type: 'object',
   properties: {
+    overallRiskLevel: {
+      type: 'string',
+      enum: ['LOW', 'MEDIUM', 'HIGH']
+    },
     darkPatternsFound: {
       type: 'array',
       items: {
@@ -27,16 +31,32 @@ const analysisResponseSchema = {
           },
           explanation: {
             type: 'string'
+          },
+          severity: {
+            type: 'string',
+            enum: ['LOW', 'MEDIUM', 'HIGH']
+          },
+          evidence: {
+            type: 'string'
           }
         },
-        required: ['category', 'explanation']
+        required: [
+          'category',
+          'explanation',
+          'severity',
+          'evidence'
+        ]
       }
     },
     aiSummary: {
       type: 'string'
     }
   },
-  required: ['darkPatternsFound', 'aiSummary']
+  required: [
+    'overallRiskLevel',
+    'darkPatternsFound',
+    'aiSummary'
+  ]
 };
 
 const splitContractIntoChunks = (text) => {
@@ -157,24 +177,86 @@ const generateContentWithRetry = async (model, prompt) => {
   throw new Error('AI request failed after all retry attempts.');
 };
 
+
+const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH'];
+
 const validateAnalysisResult = (analysis) => {
   if (
     !analysis ||
+    typeof analysis !== 'object' ||
     !Array.isArray(analysis.darkPatternsFound) ||
     typeof analysis.aiSummary !== 'string'
   ) {
     return false;
   }
 
-  const invalidPattern = analysis.darkPatternsFound.some(
-    (pattern) =>
+  // Allow legacy responses used by existing tests and scans.
+  if (
+    analysis.overallRiskLevel !== undefined &&
+    !RISK_LEVELS.includes(analysis.overallRiskLevel)
+  ) {
+    return false;
+  }
+
+  return analysis.darkPatternsFound.every((pattern) => {
+    if (
       !pattern ||
       typeof pattern.category !== 'string' ||
       typeof pattern.explanation !== 'string'
-  );
+    ) {
+      return false;
+    }
 
-  return !invalidPattern;
+    if (
+      pattern.severity !== undefined &&
+      !RISK_LEVELS.includes(pattern.severity)
+    ) {
+      return false;
+    }
+
+    if (
+      pattern.evidence !== undefined &&
+      typeof pattern.evidence !== 'string'
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 };
+
+
+
+const normalizeEvidenceWhitespace = (value) => {
+  return value
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const validateEvidenceAgainstText = (analysis, text) => {
+  const normalizedText = normalizeEvidenceWhitespace(text);
+
+  return analysis.darkPatternsFound.every((pattern) => {
+    // Existing legacy responses may not contain evidence.
+    if (pattern.evidence === undefined) {
+      return true;
+    }
+
+    if (
+      typeof pattern.evidence !== 'string' ||
+      pattern.evidence.trim().length === 0
+    ) {
+      return false;
+    }
+
+    const normalizedEvidence =
+      normalizeEvidenceWhitespace(pattern.evidence);
+
+    return normalizedText.includes(normalizedEvidence);
+  });
+};
+
+
 
 const analyzeContractChunk = async (
   model,
@@ -206,7 +288,11 @@ ${chunk}`;
       'AI returned an invalid analysis format.'
     );
   }
-
+  if (!validateEvidenceAgainstText(analysis, chunk)) {
+  throw new Error(
+    'AI returned evidence not found in the contract section.'
+  );
+}
   return analysis;
 };
 
@@ -336,17 +422,27 @@ router.post(
           chunkAnalyses
         );
 
-      const darkPatternsFound =
-        synthesis.darkPatternsFound;
+      if (
+  !validateEvidenceAgainstText(
+    synthesis,
+    normalizedContractText
+  )
+) {
+  throw new Error(
+    'AI returned evidence not found in the contract.'
+  );
+}
 
-      const aiSummary =
-        synthesis.aiSummary;
+    const darkPatternsFound = synthesis.darkPatternsFound;
+    const aiSummary = synthesis.aiSummary;
+    const overallRiskLevel = synthesis.overallRiskLevel;
 
       const scanResult = new ScanResult({
         userId: req.user.userId,
         sourceUrl: normalizedSourceUrl,
         originalText: normalizedContractText,
         darkPatternsFound,
+        overallRiskLevel,
         aiSummary
       });
 
@@ -356,7 +452,10 @@ router.post(
         success: true,
         analysis: {
           darkPatternsFound,
-          aiSummary
+          aiSummary,
+          ...(overallRiskLevel !== undefined
+            ? { overallRiskLevel }
+            : {})
         },
         scanId: scanResult._id
       });

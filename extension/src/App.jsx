@@ -419,7 +419,6 @@ function App() {
       }}
     >
       <h2
-        className="app-title"
         style={{
           margin: '0 0 12px 0',
           color: '#1a1a1a'
@@ -569,6 +568,12 @@ function App() {
               }}
             >
               <strong>Analysis Results:</strong>
+              {analysis.overallRiskLevel && (
+              <p style={{ marginTop: '10px', fontSize: '12px' }}>
+                <strong>Overall Risk Level: </strong>
+                {analysis.overallRiskLevel}
+              </p>
+            )}
 
               {/* Export the current analysis as a PDF */}
               <button
@@ -626,6 +631,17 @@ function App() {
                         <p style={{ margin: '4px 0 0 0' }}>
                           {pattern.explanation}
                         </p>
+                        {pattern.severity && (
+                        <p style={{ marginTop: '6px' }}>
+                          <strong>Severity:</strong> {pattern.severity}
+                        </p>
+                      )}
+
+                      {pattern.evidence && (
+                        <p style={{ marginTop: '6px', overflowWrap: 'anywhere' }}>
+                          <strong>Supporting Evidence:</strong> "{pattern.evidence}"
+                        </p>
+                      )}
                       </div>
                     )
                   )}
@@ -740,8 +756,6 @@ function App() {
           )}
         </div>
       )}
-
-      {/* Shared footer, visible on all authenticated tabs */}
     </div>
   );
 }

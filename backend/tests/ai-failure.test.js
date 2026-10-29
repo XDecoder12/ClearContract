@@ -84,7 +84,6 @@ describe('AI failure handling', () => {
         contractText: 'This is a test contract.'
       })
       .expect(500);
-
     expect(response.body.error).toBe(
       'Failed to analyze the contract.'
     );
@@ -95,6 +94,41 @@ describe('AI failure handling', () => {
 
     expect(scanCount).toBe(0);
   });
+test('rejects fabricated evidence without saving a scan', async () => {
+    const analysis = {
+    overallRiskLevel: 'HIGH',
+    aiSummary: 'A risk was detected.',
+    darkPatternsFound: [
+      {
+        category: 'Hidden Fee',
+        severity: 'HIGH',
+        explanation: 'An additional charge applies.',
+        evidence: 'A hidden fee of INR 5000 applies.'
+      }
+    ]
+  };
+
+  mockGenerateContent.mockResolvedValueOnce({
+    response: {
+      text: () => JSON.stringify(analysis)
+    }
+  });
+
+  const response = await request(app)
+    .post('/api/ai/analyze')
+    .set('Authorization', `Bearer ${authToken}`)
+    .send({
+      contractText:
+        'The customer may cancel their membership at any time.'
+    })
+    .expect(500);
+
+  expect(response.body.error).toBe(
+    'Failed to analyze the contract.'
+  );
+
+  expect(await ScanResult.countDocuments()).toBe(0);
+});
 
   test('retries a temporary Gemini failure and succeeds', async () => {
     const chunkAnalysis = {

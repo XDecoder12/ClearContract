@@ -14,12 +14,21 @@ const scanResultSchema = new mongoose.Schema({
     required: true 
   },
   darkPatternsFound: [{
-    category: String, // e.g., "Hidden Fee", "Forced Continuity"
-    explanation: String
-  }],
-  aiSummary: { 
-    type: String 
+  category: String,
+  explanation: String,
+  severity: {
+    type: String,
+    enum: ['LOW', 'MEDIUM', 'HIGH']
   },
+  evidence: String
+}],
+overallRiskLevel: {
+  type: String,
+  enum: ['LOW', 'MEDIUM', 'HIGH']
+},
+aiSummary: {
+  type: String
+},
   scannedAt: { 
     type: Date, 
     default: Date.now 

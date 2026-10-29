@@ -1,5 +1,4 @@
 
-
 export const exportAnalysisPdf = async ({
   analysis,
   sourceUrl = '',
@@ -9,19 +8,20 @@ export const exportAnalysisPdf = async ({
     throw new Error('No valid analysis is available to export.');
   }
 
-  // Load jsPDF only when a report is requested.
+  // Load jsPDF only when the report is requested.
   const { jsPDF } = await import('jspdf');
 
   const doc = new jsPDF();
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
+
   const margin = 18;
   const usableWidth = pageWidth - margin * 2;
 
   let y = 22;
 
-  // Create another page if the remaining space is insufficient.
+  // Add a new page when insufficient vertical space remains.
   const checkPage = (requiredHeight = 12) => {
     if (y + requiredHeight > pageHeight - 20) {
       doc.addPage();
@@ -29,7 +29,7 @@ export const exportAnalysisPdf = async ({
     }
   };
 
-  // Write wrapped text and automatically handle page breaks.
+  // Write wrapped text, supporting automatic page breaks.
   const writeText = (value, options = {}) => {
     const {
       size = 10,
@@ -50,14 +50,16 @@ export const exportAnalysisPdf = async ({
 
     for (const line of lines) {
       checkPage(lineHeight + 2);
+
       doc.text(line, margin, y);
+
       y += lineHeight;
     }
 
     y += spacing;
   };
 
-  // Report heading
+  // Main report heading
   writeText('ClearContract AI', {
     size: 19,
     bold: true,
@@ -78,7 +80,7 @@ export const exportAnalysisPdf = async ({
     spacing: 3
   });
 
-  // Original scan timestamp, if available.
+  // Original scan timestamp, when provided.
   if (scannedAt) {
     const scanDate = new Date(scannedAt);
 
@@ -102,6 +104,18 @@ export const exportAnalysisPdf = async ({
     }
   );
 
+  // Overall risk level (optional for older scans).
+  if (analysis.overallRiskLevel) {
+    writeText(
+      `OVERALL RISK LEVEL: ${analysis.overallRiskLevel}`,
+      {
+        size: 11,
+        bold: true,
+        spacing: 8
+      }
+    );
+  }
+
   // AI-generated summary
   writeText('AI SUMMARY', {
     size: 12,
@@ -116,7 +130,7 @@ export const exportAnalysisPdf = async ({
     }
   );
 
-  // Potential risks identified by the analysis.
+  // Risks identified by Gemini.
   const risks = analysis.darkPatternsFound;
 
   writeText(`POTENTIAL RISKS (${risks.length})`, {
@@ -134,6 +148,7 @@ export const exportAnalysisPdf = async ({
     );
   } else {
     risks.forEach((risk, index) => {
+      // Risk category
       writeText(
         `${index + 1}. ${risk.category || 'Uncategorized risk'}`,
         {
@@ -143,12 +158,38 @@ export const exportAnalysisPdf = async ({
         }
       );
 
+      // Explanation
       writeText(
         risk.explanation || 'No explanation provided.',
         {
-          spacing: 8
+          spacing: 5
         }
       );
+
+      // Individual risk severity
+      if (risk.severity) {
+        writeText(
+          `Severity: ${risk.severity}`,
+          {
+            size: 10,
+            spacing: 5
+          }
+        );
+      }
+
+      // Exact supporting contract quotation
+      if (risk.evidence) {
+        writeText(
+          `Supporting evidence: "${risk.evidence}"`,
+          {
+            size: 9,
+            spacing: 10
+          }
+        );
+      } else {
+        // Maintain spacing for legacy reports.
+        y += 3;
+      }
     });
   }
 
@@ -172,11 +213,12 @@ export const exportAnalysisPdf = async ({
     }
   );
 
-  // Add page numbers after the report content is generated.
+  // Add page numbers to every generated page.
   const totalPages = doc.getNumberOfPages();
 
   for (let page = 1; page <= totalPages; page++) {
     doc.setPage(page);
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(110, 110, 110);
@@ -188,7 +230,7 @@ export const exportAnalysisPdf = async ({
     );
   }
 
-  // Generate a dated filename and download the PDF.
+  // Download a dated PDF report.
   const date = new Date().toISOString().slice(0, 10);
 
   doc.save(`ClearContract-Report-${date}.pdf`);

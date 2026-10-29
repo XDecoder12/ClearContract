@@ -12,8 +12,7 @@ function HistoryList({ scans, onDeleteScan }) {
   const [riskFilter, setRiskFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
 
-  // Filter scans by search query and detected risks,
-  // then sort by scan date.
+  // Filter and sort saved scans without modifying the original array.
   const filteredScans = scans
     .filter((scan) => {
       const query = searchQuery.trim().toLowerCase();
@@ -21,9 +20,12 @@ function HistoryList({ scans, onDeleteScan }) {
       const searchableText = [
         scan.sourceUrl || '',
         scan.aiSummary || '',
+        scan.overallRiskLevel || '',
         ...(scan.darkPatternsFound || []).flatMap((pattern) => [
           pattern.category || '',
-          pattern.explanation || ''
+          pattern.explanation || '',
+          pattern.severity || '',
+          pattern.evidence || ''
         ])
       ]
         .join(' ')
@@ -49,7 +51,7 @@ function HistoryList({ scans, onDeleteScan }) {
         : dateA - dateB;
     });
 
-  // Delete a scan only after confirmation.
+  // Delete a saved scan only after user confirmation.
   const handleDelete = async (scan) => {
     const confirmed = window.confirm(
       'Delete this scan permanently? This action cannot be undone.'
@@ -131,7 +133,6 @@ function HistoryList({ scans, onDeleteScan }) {
               minWidth: 0,
               padding: '7px',
               borderRadius: '6px',
-              border: '1px solid #d1d5db',
               fontSize: '12px'
             }}
           >
@@ -140,7 +141,6 @@ function HistoryList({ scans, onDeleteScan }) {
           </select>
         </div>
 
-        {/* Number of matching records */}
         <p
           style={{
             margin: '10px 0 0',
@@ -152,7 +152,7 @@ function HistoryList({ scans, onDeleteScan }) {
         </p>
       </div>
 
-      {/* Deletion error */}
+      {/* Delete or PDF export error */}
       {deleteError && (
         <p
           role="alert"
@@ -182,7 +182,7 @@ function HistoryList({ scans, onDeleteScan }) {
         </p>
       )}
 
-      {/* Scan history cards */}
+      {/* Saved scan cards */}
       {filteredScans.map((scan) => (
         <div
           key={scan._id}
@@ -194,7 +194,7 @@ function HistoryList({ scans, onDeleteScan }) {
             fontSize: '12px'
           }}
         >
-          {/* Expand or collapse a scan */}
+          {/* Expand or collapse saved scan */}
           <button
             type="button"
             onClick={() => {
@@ -225,6 +225,14 @@ function HistoryList({ scans, onDeleteScan }) {
               Potential Risks: {scan.darkPatternsFound?.length || 0}
             </p>
 
+            {/* Display overall risk level when available */}
+            {scan.overallRiskLevel && (
+              <p>
+                <strong>Overall Risk: </strong>
+                {scan.overallRiskLevel}
+              </p>
+            )}
+
             <span>
               {openScan === scan._id
                 ? '▲ Hide Details'
@@ -253,7 +261,30 @@ function HistoryList({ scans, onDeleteScan }) {
                       }}
                     >
                       <strong>{pattern.category}</strong>
+
                       <p>{pattern.explanation}</p>
+
+                      {/* Risk severity */}
+                      {pattern.severity && (
+                        <p style={{ marginTop: '6px' }}>
+                          <strong>Severity: </strong>
+                          {pattern.severity}
+                        </p>
+                      )}
+
+                      {/* Supporting contract quotation */}
+                      {pattern.evidence && (
+                        <p
+                          style={{
+                            marginTop: '6px',
+                            overflowWrap: 'anywhere',
+                            lineHeight: 1.5
+                          }}
+                        >
+                          <strong>Supporting Evidence: </strong>
+                          "{pattern.evidence}"
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -263,7 +294,7 @@ function HistoryList({ scans, onDeleteScan }) {
             </div>
           )}
 
-          {/* Delete button */}
+          {/* Delete scan */}
           <button
             type="button"
             disabled={deletingScanId !== null}
@@ -286,40 +317,44 @@ function HistoryList({ scans, onDeleteScan }) {
               ? 'Deleting...'
               : 'Delete Scan'}
           </button>
-          
-<button
-  type="button"
-  onClick={async() => {
-    try {
-      setDeleteError('');
 
-      exportAnalysisPdf({
-        analysis: {
-          aiSummary: scan.aiSummary,
-          darkPatternsFound: scan.darkPatternsFound || []
-        },
-        sourceUrl: scan.sourceUrl,
-        scannedAt: scan.scannedAt
-      });
-    } catch (err) {
-      console.error('PDF export error:', err);
-      setDeleteError('Could not export the scan report.');
-    }
-  }}
-  style={{
-    marginTop: '12px',
-    marginLeft: '8px',
-    padding: '7px 12px',
-    backgroundColor: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer'
-  }}
->
-  Download PDF
-</button>
+          {/* Export saved scan as PDF */}
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setDeleteError('');
 
+                await exportAnalysisPdf({
+                  analysis: {
+                    aiSummary: scan.aiSummary,
+                    overallRiskLevel: scan.overallRiskLevel,
+                    darkPatternsFound:
+                      scan.darkPatternsFound || []
+                  },
+                  sourceUrl: scan.sourceUrl,
+                  scannedAt: scan.scannedAt
+                });
+              } catch (err) {
+                console.error('PDF export error:', err);
+                setDeleteError(
+                  'Could not export the scan report.'
+                );
+              }
+            }}
+            style={{
+              marginTop: '12px',
+              marginLeft: '8px',
+              padding: '7px 12px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Download PDF
+          </button>
         </div>
       ))}
     </div>

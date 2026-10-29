@@ -8,12 +8,14 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const scans = await ScanResult.find({
-      userId: req.user.userId
-    })
-      .select('_id sourceUrl aiSummary darkPatternsFound scannedAt')
-      .sort({ scannedAt: -1 })
-      .limit(50)
-      .lean();
+  userId: req.user.userId
+})
+  .select(
+    '_id sourceUrl aiSummary overallRiskLevel darkPatternsFound scannedAt'
+  )
+  .sort({ scannedAt: -1 })
+  .limit(50)
+  .lean();
 
     res.status(200).json({
       success: true,
