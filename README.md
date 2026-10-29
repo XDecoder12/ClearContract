@@ -1,148 +1,379 @@
+
+<div align="center">
+
 # ClearContract
 
-**ClearContract** is an AI-assisted contract and Terms of Service analyzer. It helps users review potentially concerning clauses using a Chrome extension, an Express API, MongoDB and Google's Gemini API. A separate administrator dashboard provides aggregate usage statistics and account and scan oversight.
+### Understand the terms before you agree.
 
-The project is currently designed for **local development and demonstration**. The extension, authentication, history, PDF reporting and administrator APIs are implemented. A publicly hosted backend and Chrome Web Store release have **not** been established.
+**AI-assisted contract analysis for clearer digital agreements.**
 
-> **Important:** ClearContract provides preliminary, AI-generated information, **not legal advice**. Findings, risk ratings and quotations must be reviewed in context. An empty list of flagged risks does not prove that a contract is safe.
+A Chrome extension that helps users identify potentially concerning contractual terms, understand their implications and review supporting evidence — without navigating pages of legal language.
+
+<br/>
+
+[![Version](https://img.shields.io/badge/version-1.0.0-18181b?style=flat-square)](https://github.com/XDecoder12/ClearContract)
+[![Status](https://img.shields.io/badge/status-active%20development-334155?style=flat-square)](https://github.com/XDecoder12/ClearContract)
+[![Platform](https://img.shields.io/badge/platform-Chrome%20Extension-475569?style=flat-square)](https://github.com/XDecoder12/ClearContract)
+[![Manifest](https://img.shields.io/badge/manifest-V3-64748b?style=flat-square)](https://github.com/XDecoder12/ClearContract)
+
+<br/>
+
+**[Features](#features)** · **[Architecture](#system-architecture)** · **[Tech Stack](#technology-stack)** · **[Setup](#getting-started)** · **[Engineering](#software-engineering)**
+
+<br/>
+
+<sub>Version 1.0 · Academic prototype · Local development</sub>
+
+</div>
+
+---
+
+## Overview
+
+Digital agreements often contain clauses concerning automatic renewals, cancellation conditions, unexpected charges, data usage and limitations of liability. Understanding these terms can require considerable time and legal familiarity.
+
+**ClearContract** is designed to make this review more accessible.
+
+Users can paste an agreement or extract text from the active webpage, submit it for AI-assisted analysis and receive a structured summary of potential consumer risks.
+
+Each supported finding includes a category, severity classification, explanation and supporting quotation from the supplied agreement.
+
+The application also provides authenticated scan history, PDF reporting and a separate administrator dashboard.
+
+> [!IMPORTANT]
+> ClearContract is an informational analysis tool, not a legal adviser. AI-generated results may be incomplete or inaccurate. A LOW risk classification does not guarantee that an agreement is safe.
 
 ## Features
 
-### Chrome extension
+<table>
+<tr>
+<td width="50%" valign="top">
 
-- Register, sign in and sign out using email and password.
-- Paste contract text manually or use **Read Current Webpage** to extract readable text from the active tab.
-- Analyze text using Gemini through the authenticated backend API.
-- Review a short AI summary, an overall **LOW / MEDIUM / HIGH** risk level and individual flagged risks.
-- For each flagged risk, view its category, severity, explanation and supporting quotation when provided.
-- Browse the latest saved scans in expandable History cards, search by text, filter by whether risks were found and sort by scan date.
-- Delete a saved scan after confirmation.
-- Download PDF reports for both a fresh analysis and saved History records.
-- Keep session tokens in Chrome extension storage and handle expired sessions.
+### Contract analysis
 
-### Analysis backend
+- Manually paste contract text
+- Extract text from the active webpage
+- Analyze using Google's Gemini API
+- Handle longer contracts through chunked analysis
+- View an AI-generated summary
 
-- Express REST API and Mongoose models for users and scan results.
-- JWT authentication and bcryptjs password hashing.
-- Input validation, source URL checking and a **200,000-character** contract-text limit.
-- Chunking with overlap for longer inputs and a synthesis step to combine findings.
-- Gemini structured JSON output containing `overallRiskLevel`, `aiSummary` and `darkPatternsFound`.
-- A risk entry can include `category`, `severity`, `explanation` and `evidence`.
-- Verification that supplied evidence occurs in the contract text, allowing differences in whitespace. Unsupported quotations can cause an analysis request to fail; findings are **not** silently treated as verified.
-- Saved analyses scoped to the authenticated user. Older records lacking newer optional risk fields remain supported.
-- Rate limiting on analysis requests, Helmet headers, configurable CORS, environment validation and database-aware health checks.
+</td>
+<td width="50%" valign="top">
 
-### Administrator dashboard
+### Risk identification
 
-- Administrator authentication with database-backed role checks.
-- Totals for registered users, saved scans and scans in the previous seven days.
-- Commonly detected risk categories.
-- User listing with email search, pagination, account role and per-user scan count.
-- Paginated scan activity with dates, URLs, account information and detected patterns.
-- Loading, empty and API-error states.
+- Overall LOW / MEDIUM / HIGH assessment
+- Individual finding severity
+- Consumer-friendly explanations
+- Supporting contract quotations
+- Validation of structured AI responses
 
-The dashboard reads from protected backend endpoints, not a fixed demonstration dataset. Notification features are not implemented.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-## Technology stack
+### Personal workspace
 
-| Area | Technology |
+- Account registration and login
+- Persistent authentication state
+- User-specific saved history
+- Search, filter and sort scans
+- Delete previous analyses
+- Export analysis reports as PDF
+
+</td>
+<td width="50%" valign="top">
+
+### Administration
+
+- Role-protected admin dashboard
+- Registered-user statistics
+- Recent scan activity
+- Frequently detected risk categories
+- Searchable user directory
+- Paginated analysis records
+
+</td>
+</tr>
+</table>
+
+## How It Works
+
+<div align="center">
+
+**01 — Provide text** → **02 — Analyze** → **03 — Review findings** → **04 — Save or export**
+
+</div>
+
+**1. Provide the agreement.** Paste contract text into the extension or read the current webpage. The application accepts text of up to 200,000 characters.
+
+**2. Request analysis.** The authenticated extension submits the text to the Express backend. Long inputs are divided into overlapping sections for processing.
+
+**3. Evaluate findings.** Gemini returns structured observations. The backend validates their format and checks supporting quotations against the supplied contract, allowing whitespace differences.
+
+**4. Review and retain results.** Valid analyses are saved in MongoDB and displayed in the extension. Users can revisit them through History or download PDF reports.
+
+An unsuccessful analysis is reported as an error rather than being silently treated as a safe contract.
+
+---
+
+## Technology Stack
+
+ClearContract is built using a JavaScript-based full-stack architecture with separate browser, API, database and administrative components.
+
+| Layer | Technology | Purpose |
+|:---|:---|:---|
+| **Browser Extension** | React 19, JavaScript | Interactive contract-scanning interface |
+| **Extension Platform** | Chrome Manifest V3 | Browser permissions, popup integration and webpage extraction |
+| **Frontend Build** | Vite 8 | Development tooling and production builds |
+| **Backend API** | Node.js, Express 5 | REST endpoints and application logic |
+| **Database** | MongoDB, Mongoose | Account and analysis persistence |
+| **AI Integration** | Google Gemini API | Contract summarization and potential-risk identification |
+| **Authentication** | JWT, bcryptjs | Session tokens and password hashing |
+| **PDF Reports** | jsPDF | Client-side report generation |
+| **Admin Dashboard** | React, Tailwind CSS | Administrative overview and data presentation |
+| **Backend Testing** | Jest, Supertest | Automated endpoint and behavior verification |
+| **Test Database** | MongoDB Memory Server | Isolated MongoDB-backed tests |
+| **Security Middleware** | Helmet, CORS, express-rate-limit | Security headers, origin restrictions and request limiting |
+| **Version Control** | Git, GitHub | Collaborative development and change history |
+
+### Why these technologies?
+
+**React** provides a component-based interface for the extension and dashboard. **Express** separates HTTP request handling from the browser interface and keeps Gemini credentials server-side.
+
+**MongoDB** supports document-oriented storage of users and scan results, including arrays of detected findings. **Gemini** provides structured natural-language analysis, while backend validation checks the format and evidence of its responses.
+
+**Jest and Supertest** allow API behavior to be tested without relying on a live Gemini response for every automated test.
+
+---
+
+## System Architecture
+
+ClearContract follows a client-server architecture with separated presentation, service and persistence responsibilities.
+
+```mermaid
+flowchart TB
+    USER["User"]
+    ADMIN["Administrator"]
+
+    subgraph CLIENTS["Presentation Layer"]
+        EXT["Chrome Extension<br/>React + Manifest V3"]
+        DASH["Admin Dashboard<br/>React + Tailwind CSS"]
+    end
+
+    subgraph SERVER["Application Layer — Node.js / Express"]
+        AUTH["Authentication<br/>JWT + Role Checks"]
+        ANALYSIS["Contract Analysis<br/>Validation + Chunking"]
+        HISTORY["Scan History<br/>Read + Delete"]
+        ADMINAPI["Admin API<br/>Statistics + Records"]
+    end
+
+    subgraph EXTERNAL["Data and AI Services"]
+        DB[("MongoDB")]
+        GEMINI["Google Gemini API"]
+    end
+
+    USER --> EXT
+    ADMIN --> DASH
+
+    EXT -->|"HTTP + JWT"| AUTH
+    EXT -->|"Analyze"| ANALYSIS
+    EXT -->|"History"| HISTORY
+
+    DASH -->|"Protected Requests"| ADMINAPI
+
+    AUTH <--> DB
+    ANALYSIS <-->|"Structured AI Output"| GEMINI
+    ANALYSIS -->|"Save Results"| DB
+    HISTORY <--> DB
+    ADMINAPI <--> DB
+
+    classDef client fill:#eff6ff,stroke:#64748b,color:#0f172a
+    classDef service fill:#f1f5f9,stroke:#64748b,color:#0f172a
+    classDef external fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+
+    class EXT,DASH client
+    class AUTH,ANALYSIS,HISTORY,ADMINAPI service
+    class DB,GEMINI external
+```
+
+### Component responsibilities
+
+| Component | Responsibility |
 |---|---|
-| Extension | React, JavaScript, Vite, Chrome Manifest V3 |
-| Backend | Node.js, Express.js |
-| Database | MongoDB / MongoDB Atlas, Mongoose |
-| AI | Google Gemini API (`@google/generative-ai`) |
-| Authentication | JWT, bcryptjs |
-| Administrator dashboard | React, Vite, Tailwind CSS |
-| PDF export | jsPDF |
-| Backend tests | Jest, Supertest, MongoDB Memory Server |
-| Quality checks | ESLint, Vite build |
+| Chrome Extension | Collects contract text and displays results |
+| Authentication API | Registers users, authenticates accounts and validates JWTs |
+| Analysis API | Validates inputs, communicates with Gemini and saves successful results |
+| History API | Retrieves and deletes scans belonging to the authenticated user |
+| MongoDB | Stores user accounts and analysis documents |
+| Admin API | Provides protected statistics and account/scan records |
+| Admin Dashboard | Presents administrative data retrieved from the backend |
 
-The backend currently selects the model identifier `gemini-3.5-flash-lite` in `backend/routes/ai.js`; actual model access depends on the configured Gemini API account.
+The extension does not directly access MongoDB or send Gemini requests using an embedded API key.
 
-## System overview
+---
 
-```text
-Chrome extension (React)                         Admin dashboard (React)
-  ├─ paste text / scrape active page               └─ admin login and oversight
-  ├─ scan result / saved history                             │
-  └─ PDF export                                              │
-              │ HTTPS/HTTP + JWT                             │ JWT
-              └─────────────────┬────────────────────────────┘
-                                ▼
-                      Express backend API
-                  ├─ authentication / authorization
-                  ├─ contract analysis and validation ──────► Gemini API
-                  ├─ scan persistence and deletion
-                  └─ admin statistics and listings
-                                │
-                                ▼
-                         MongoDB database
-                         ├─ users
-                         └─ scan results
+## UML Sequence Diagram
+
+### Contract analysis lifecycle
+
+This sequence illustrates the analysis request from the user interface through the backend, Gemini and database.
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor User
+    participant Extension as Chrome Extension
+    participant Backend as Express API
+    participant Gemini as Gemini API
+    participant Database as MongoDB
+
+    User->>Extension: Enter or extract contract text
+    User->>Extension: Select Analyze Contract
+
+    Extension->>Backend: POST /api/ai/analyze + JWT
+    Backend->>Backend: Authenticate and validate request
+
+    alt Invalid or unauthorized request
+        Backend-->>Extension: Error response
+        Extension-->>User: Display error
+    else Valid request
+        Backend->>Backend: Normalize and split text
+
+        loop Each contract section
+            Backend->>Gemini: Request structured analysis
+            Gemini-->>Backend: Findings, severity and evidence
+            Backend->>Backend: Validate output and quotations
+        end
+
+        Backend->>Gemini: Synthesize findings
+        Gemini-->>Backend: Consolidated result
+        Backend->>Backend: Validate final evidence
+
+        alt Analysis rejected
+            Backend-->>Extension: Analysis error
+            Extension-->>User: Display error
+        else Analysis accepted
+            Backend->>Database: Save ScanResult
+            Database-->>Backend: Saved scan ID
+            Backend-->>Extension: Analysis and scan ID
+            Extension-->>User: Display results
+        end
+    end
 ```
 
-**Analysis flow:** the extension sends pasted or extracted text to `POST /api/ai/analyze`. The backend validates and, when needed, divides the input into overlapping chunks. Gemini produces structured findings; the backend validates the response and verifies supplied quotations against the contract text. A synthesis stage consolidates chunk analyses. A successful result is saved and returned with a scan ID. History is accessed via `GET /api/scans`.
+The backend validates supporting quotations against the supplied text. This is a consistency check, not a guarantee that the model's interpretation is legally correct.
 
-A text match helps detect unsupported quotations but does **not** establish that the model's legal interpretation is correct.
+## UML Activity Diagram
 
-## Repository layout
+### User analysis workflow
 
-```text
-ClearContract/
-├── backend/
-│   ├── config/             # environment, prompts, shutdown
-│   ├── middleware/         # authentication and admin authorization
-│   ├── models/             # User and ScanResult
-│   ├── routes/             # auth, AI, scans and admin APIs
-│   ├── scripts/            # admin promotion utility
-│   ├── tests/              # backend automated tests
-│   ├── .env.example
-│   ├── app.js
-│   └── server.js
-├── extension/
-│   ├── public/             # Manifest V3 and app icons
-│   └── src/                # popup, authentication, History and PDF export
-├── dashboard/              # administrator React application
-├── tests/sample-contracts/ # fictional contracts for manual QA
-└── README.md
+```mermaid
+flowchart TD
+    START([Start]) --> INPUT["Paste text or read webpage"]
+
+    INPUT --> VALID{"Contract text valid?"}
+    VALID -->|No| INVALID["Display input error"]
+    INVALID --> END([End])
+
+    VALID -->|Yes| AUTH{"Authenticated?"}
+    AUTH -->|No| LOGIN["Request login"]
+    LOGIN --> END
+
+    AUTH -->|Yes| SUBMIT["Submit analysis request"]
+    SUBMIT --> PROCESS["Normalize and process text"]
+    PROCESS --> AI["Request Gemini analysis"]
+
+    AI --> CHECK{"Valid result and evidence?"}
+    CHECK -->|No| ERROR["Display analysis error"]
+    ERROR --> END
+
+    CHECK -->|Yes| SAVE["Save scan in MongoDB"]
+    SAVE --> DISPLAY["Display summary and findings"]
+
+    DISPLAY --> CHOICE{"User action"}
+    CHOICE -->|Export| PDF["Generate PDF report"]
+    CHOICE -->|History| HISTORY["Review saved scans"]
+    CHOICE -->|Finish| END
+
+    PDF --> END
+    HISTORY --> END
 ```
 
-## Prerequisites
+---
 
-- Node.js compatible with the Vite 8 toolchain (Node.js 20.19+ or 22.12+).
-- npm and Google Chrome.
-- A MongoDB database, such as MongoDB Atlas.
-- A Gemini API key.
+## Data Model
 
-Each application directory has its own dependencies and `package.json`.
+Two primary Mongoose models support the application.
 
-## Local installation
+| Model | Main fields |
+|---|---|
+| `User` | `email`, `password` (hashed), `role`, `createdAt` |
+| `ScanResult` | `userId`, `sourceUrl`, `originalText`, `overallRiskLevel`, `aiSummary`, `darkPatternsFound`, `scannedAt` |
 
-### 1. Clone
+Each entry in `darkPatternsFound` may contain:
+
+- `category` — Type of potential consumer risk
+- `severity` — LOW, MEDIUM or HIGH
+- `explanation` — Plain-language description
+- `evidence` — Supporting quotation from the contract
+
+The schema retains compatibility with earlier saved analyses that do not include the newer risk-classification fields.
+
+## API Reference
+
+| Method | Endpoint | Access | Description |
+|:---|:---|:---|:---|
+| GET | `/health` | Public | Check API and database health |
+| POST | `/api/auth/register` | Public | Create a user account |
+| POST | `/api/auth/login` | Public | Authenticate and obtain a JWT |
+| POST | `/api/ai/analyze` | Authenticated | Analyze contract text and save results |
+| GET | `/api/scans` | Authenticated | Retrieve personal scan history |
+| DELETE | `/api/scans/:id` | Authenticated | Delete a personally owned scan |
+| GET | `/api/admin/me` | Administrator | Verify administrator permissions |
+| GET | `/api/admin/stats` | Administrator | Retrieve application statistics |
+| GET | `/api/admin/users` | Administrator | Retrieve paginated account records |
+| GET | `/api/admin/scans` | Administrator | Retrieve paginated scan records |
+
+Successful contract analyses are persisted by `POST /api/ai/analyze`. A separate scan-creation endpoint is not needed for the current workflow.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js compatible with the project's Vite toolchain
+- npm
+- Google Chrome
+- MongoDB Atlas or another compatible MongoDB deployment
+- A Google Gemini API key
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/XDecoder12/ClearContract.git
 cd ClearContract
 ```
 
-### 2. Backend
+### 2. Configure the backend
 
 ```bash
 cd backend
 npm ci
 ```
 
-Copy `backend/.env.example` to `backend/.env` (on Windows PowerShell: `Copy-Item .env.example .env`) and set your own values:
+Create `backend/.env` using the provided `.env.example`.
 
-```env
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_long_random_secret
-GEMINI_API_KEY=your_gemini_api_key
-PORT=5001
-CORS_ALLOWED_ORIGINS=chrome-extension://YOUR_EXTENSION_ID,http://localhost:5173
-```
-
-For MongoDB Atlas, allow the necessary client IP in Network Access and use a properly configured database user. Never commit real `.env` files or secrets.
+| Environment variable | Description |
+|---|---|
+| `MONGO_URI` | MongoDB database connection |
+| `JWT_SECRET` | JWT signing secret |
+| `GEMINI_API_KEY` | Gemini API credential |
+| `PORT` | Backend port, default 5001 |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated permitted browser origins |
 
 Start the backend:
 
@@ -150,31 +381,27 @@ Start the backend:
 npm run dev
 ```
 
-The backend typically runs on `http://localhost:5001`. Visit `http://localhost:5001/health` to check API and database health. `npm start` runs without Nodemon watching files.
+Health endpoint:
 
-### 3. Chrome extension
+`http://localhost:5001/health`
 
-In a separate terminal:
+### 3. Build the Chrome extension
+
+In a new terminal:
 
 ```bash
 cd extension
 npm ci
-npm run lint
 npm run build
 ```
 
-1. Open `chrome://extensions` in Chrome.
-2. Enable **Developer mode** and select **Load unpacked**.
-3. Select `ClearContract/extension/dist`.
-4. Copy the extension ID shown in Chrome.
-5. Set `CORS_ALLOWED_ORIGINS` in `backend/.env` to include `chrome-extension://<that-id>` and restart the backend.
-6. Register or log in through the extension popup.
+Open `chrome://extensions`, enable Developer mode and select **Load unpacked**.
 
-The extension currently points to `http://localhost:5001`, and its Manifest V3 `host_permissions` include that local address. For deployment, both the API URL and host permissions require a reviewed HTTPS configuration.
+Choose `extension/dist` and add the extension's origin to `CORS_ALLOWED_ORIGINS` in your backend environment configuration. Restart the backend after changing its configuration.
 
-### 4. Admin dashboard
+### 4. Run the admin dashboard
 
-In another terminal:
+In a separate terminal:
 
 ```bash
 cd dashboard
@@ -182,88 +409,76 @@ npm ci
 npm run dev
 ```
 
-The dashboard normally uses `http://localhost:5173` and expects the backend at `http://localhost:5001`. If needed, create `dashboard/.env.local`:
+The local dashboard is normally available at:
 
-```env
-VITE_API_BASE_URL=http://localhost:5001
-```
+`http://localhost:5173`
 
-Ensure the dashboard origin is listed in backend CORS settings.
+For a different backend URL, configure `VITE_API_BASE_URL` through `dashboard/.env.local`.
 
-### 5. Administrator account
+### Administrator access
 
-Register an ordinary user first. Then from the backend directory, run:
+The backend includes a utility for promoting an existing user to administrator status:
 
 ```bash
+cd backend
 node scripts/promote-admin.js existing-user@example.com
 ```
 
-This changes the existing account's role to `admin`; it does not create an account. Sign in to the administrator dashboard with that account. Public registration cannot grant itself admin privileges.
+Only authorized developers should run this command against a trusted database.
 
-## API overview
+---
 
-| Method | Path | Access | Purpose |
-|---|---|---|---|
-| GET | `/` | Public | Basic API response |
-| GET | `/health` | Public | API/database health |
-| POST | `/api/auth/register` | Public | Account registration |
-| POST | `/api/auth/login` | Public | Login and JWT issuance |
-| POST | `/api/ai/analyze` | JWT | Analyze and save contract |
-| GET | `/api/scans` | JWT | Retrieve up to 50 recent user scans |
-| DELETE | `/api/scans/:id` | JWT | Delete an owned saved scan |
-| GET | `/api/admin/me` | Admin | Verify admin access |
-| GET | `/api/admin/stats` | Admin | Usage statistics |
-| GET | `/api/admin/users` | Admin | Search and paginate users |
-| GET | `/api/admin/scans` | Admin | Paginated scan activity |
+## Project Structure
 
-Example analysis request body:
-
-```json
-{
-  "contractText": "Membership automatically renews unless cancelled.",
-  "sourceUrl": "https://example.com/terms"
-}
+```text
+ClearContract/
+├── backend/                   # Express API and data layer
+│   ├── config/                # Configuration and AI prompts
+│   ├── middleware/            # Authentication and authorization
+│   ├── models/                # Mongoose data models
+│   ├── routes/                # API endpoints
+│   ├── scripts/               # Administrative utilities
+│   └── tests/                 # Automated backend tests
+│
+├── extension/                 # Chrome extension
+│   ├── public/                # Manifest and icons
+│   └── src/
+│       ├── components/        # React interface components
+│       └── utils/             # Storage and PDF utilities
+│
+├── dashboard/                 # Administrator dashboard
+│   └── src/
+│
+├── tests/
+│   └── sample-contracts/      # Fictional contracts for QA
+│
+└── README.md
 ```
 
-`sourceUrl` is optional but, if provided, must be an HTTP or HTTPS URL. An analysis response contains `success`, `scanId` and an `analysis` object. For newer results, the analysis has a structure similar to:
+## Testing
 
-```json
-{
-  "overallRiskLevel": "MEDIUM",
-  "aiSummary": "The contract contains an automatic renewal condition.",
-  "darkPatternsFound": [
-    {
-      "category": "Automatic Renewal",
-      "severity": "MEDIUM",
-      "explanation": "The membership continues until the customer cancels.",
-      "evidence": "Membership automatically renews unless cancelled."
-    }
-  ]
-}
-```
+### Backend
 
-This example is illustrative, not a claim about an actual service's contract or a guaranteed Gemini result. Older saved scans might lack risk-level, severity or evidence fields.
-
-Admin list endpoints support pagination with page sizes up to 100. User search uses the `q` parameter. The dashboard's scan search operates on currently loaded records rather than performing server-side search across all scans.
-
-## Testing and QA
-
-From `backend/`:
+The backend test suite covers authentication, authorization, AI analysis, persistence, validation, rate limits, administration, health checks and failure scenarios.
 
 ```bash
+cd backend
 npm test
 ```
 
-At the last confirmed local test run on **29 October 2026**, **66 backend tests passed across 12 suites**. The suite covers authentication, permissions, analysis success/failure handling, evidence validation, request limits, environment checks, health, shutdown and administrator APIs. These are automated checks using mock Gemini responses; they do not guarantee perfect live AI outputs.
+**Latest verified local result: 66 tests passed across 12 suites.**
 
-From `extension/`:
+The automated tests use mocked AI responses where appropriate. Passing tests do not establish the legal accuracy of live model output.
+
+### Chrome extension
 
 ```bash
+cd extension
 npm run lint
 npm run build
 ```
 
-Both succeeded at the final integration checkpoint. For the dashboard:
+### Administrator dashboard
 
 ```bash
 cd dashboard
@@ -271,42 +486,79 @@ npm run lint
 npm run build
 ```
 
-Dashboard build success should be verified independently before claiming a fresh pass.
+The repository also contains eight fictional sample contracts for manual testing. These are illustrative test documents, not authoritative legal agreements from the companies mentioned in their filenames.
 
-**Manual contract QA:** `tests/sample-contracts/` contains eight fictional or illustrative sample agreements used for evaluating consumer-risk detection. Names resembling real services are for testing only; these files are not presented as authentic current service agreements.
+---
 
-Useful end-to-end checks include registration, login/logout, manual analysis, active-page extraction, risk evidence, saved History, search/filter/sort, deletion, both PDF downloads and admin access.
+## Software Engineering
 
-## Security and privacy considerations
+ClearContract applies several software engineering principles through its implementation.
 
-- Passwords are hashed using bcryptjs.
-- JWTs protect user-specific API requests. Tokens expire, and the extension handles expired sessions.
-- Admin endpoints require authentication and a database-backed administrator role.
-- Inputs are length-limited, URLs are validated and analysis requests are rate-limited.
-- Configurable CORS and Helmet headers provide additional protections.
-- History and admin APIs limit selected fields instead of returning whole database documents.
-- Scan results **do store the original contract text** in MongoDB. This matters for privacy, data retention and future deployment policies.
-- The API sends contract text to Gemini for analysis. Do not submit confidential agreements without understanding the data-processing implications.
+| Principle | Application in ClearContract |
+|---|---|
+| Separation of concerns | Separate browser, backend, persistence and administration layers |
+| Modularity | Organized React components, API routes, middleware and data models |
+| Abstraction | API boundaries isolate browser interfaces from backend logic |
+| Input validation | Invalid contract text, URLs and AI response structures are rejected |
+| Access control | JWT authentication and database-backed role verification |
+| Verification | Automated API tests and frontend quality checks |
+| Maintainability | Component-based development and Git-based change tracking |
 
-These measures do not make the project independently audited or production-ready.
+The architecture, sequence and activity diagrams document the current implementation and provide a foundation for further refinement.
 
-## Current limitations
+## Security and Data Handling
 
-- Backend and extension are configured for localhost, not a production HTTPS deployment.
-- Chrome Web Store publication and a complete public privacy policy are not in place.
-- Gemini responses can be inaccurate or return quotations with differences beyond whitespace; verification may reject the analysis rather than save unsupported evidence.
-- Risk levels are model-generated indicators, not independently validated legal conclusions.
-- The extension reads webpage `document.body.innerText` where Chrome permits script injection; it is not a dedicated legal-document parser and may collect irrelevant page text.
-- No established production policy for long-term retention and deletion of original contract text.
-- Dashboard scan searching is limited to loaded records; notifications are not implemented.
-- Formal academic artifacts such as diagrams and the project report are separate from this repository documentation.
+The application currently implements:
 
-## Development and contributions
+- Password hashing with bcryptjs
+- JWT authentication
+- Server-side administrator role validation
+- User-specific scan retrieval and deletion
+- Input length and source URL validation
+- Analysis endpoint rate limiting
+- Security headers through Helmet
+- Configurable CORS restrictions
+- Server-side handling of Gemini API credentials
 
-The project was developed collaboratively. UI branding and styling, Gemini prompt improvements and fictional contract QA samples were incorporated from teammate development branches. Integration also preserved and extended authentication, scanning, scan management and PDF reporting. The team's original development branches are intentionally retained for review of contribution history.
+**Privacy consideration:** The backend stores original submitted contract text alongside saved analyses. Contract content is also processed using the Gemini API.
 
-Individual responsibilities and authorship should be assessed from the repository's commit history and project records rather than inferred from this summary.
+Users should avoid submitting confidential or sensitive agreements without considering these data-handling implications.
 
-## Disclaimer
+Production privacy, retention and security requirements need further review before public deployment.
 
-ClearContract is an educational project to assist with preliminary review of contracts and Terms of Service. It does not provide legal advice. Users should independently review source documents and obtain advice from a qualified professional for consequential decisions.
+## Project Status
+
+**Version 1.0 — Academic prototype**
+
+The core extension, backend, authenticated History, AI analysis, PDF reporting and administrator dashboard are implemented for local development and demonstration.
+
+### Current limitations
+
+- The backend is not established as a publicly deployed production service.
+- Chrome Web Store publication is not complete.
+- The extension currently targets a local backend URL.
+- AI-generated quotations may be rejected when they cannot be verified against the submitted text.
+- Additional end-to-end testing and broader AI accuracy evaluation are needed.
+- Production-oriented privacy and retention policies remain to be defined.
+
+These limitations are part of the current development scope, not a claim that all planned features are implemented.
+
+## Academic Context
+
+Developed as a minor project incorporating **Advanced Web Technology (AWT)** and **Software Engineering (SE)** concepts.
+
+The project demonstrates full-stack application development, browser integration, REST APIs, modular design, UML-based system representation, access control and automated testing.
+
+Development history and contributions can be reviewed through the repository's Git commits and development branches.
+
+---
+
+<div align="center">
+
+### ClearContract
+
+*Making digital agreements easier to understand.*
+
+<sub>AI-assisted analysis · Version 1.0 · Under active development</sub>
+
+</div>
